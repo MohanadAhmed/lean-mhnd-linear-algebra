@@ -48,38 +48,33 @@ lemma eigenvalues_nonneg_of_pos_semidef (A: matrix (fin n) (fin n) ℂ)
   apply hAp.2,
 end
 
--- example (m n : ℕ)
---   (A : matrix (fin m) (fin n) ℂ) :
---   let Z : (Aᴴ ⬝ A).is_hermitian := is_hermitian_transpose_mul_self A 
---   in 
---   (Z.eigenvector_matrix)ᴴ ⬝ Z.eigenvector_matrix = 1 :=
--- begin
---   intro Z,
---   rw is_hermitian.eigenvector_matrix,
---   funext i j,
-  
+
+
+variables {L M N: Type*}
+variables [fintype M][decidable_eq M]
+variables [fintype N][decidable_eq N]
+variables [fintype L][decidable_eq L]
+
+
+def colpart₁ (A : matrix (M) (N ⊕ L) F) : matrix M N F :=
+  matrix.of (λ (i : M)(j : N), A i (sum.inl j))
+
+def colpart₂ (A : matrix (M) (N ⊕ L) F) : matrix M L F :=
+  matrix.of (λ (i : M)(j : L), A i (sum.inr j))
+
+-- def X := !![1, 2, 3; 4, 5, 6]
+-- def p := (λ (i: fin 3), i = 2)
+-- def p_dec: decidable_pred p := begin
+--   unfold decidable_pred,
+--   intro a,
+--   rw p, dsimp,
+--   exact eq.decidable a 2,
 -- end
 
 
-variables {N: Type*}[fintype N][decidable_eq N]
-variables (Z: matrix N N ℝ)(hZ: Z.is_hermitian)
-def SN := fintype.elems (N)
-noncomputable def z0eigs := finset.subtype {i: N | (hZ.eigenvalues i = 0) }
-noncomputable def peigs := finset.subtype {i: N | ¬(hZ.eigenvalues i = 0) }
-#check (z0eigs Z hZ (fintype.elems N)) ⊕ (peigs Z hZ (fintype.elems N))
-
-def valsx: (list ℕ) := [0, 1, 2, 0, 4, 6] 
-def myF (i : fin 6) := (list.nth_le valsx i (fin.is_lt i))
-def Froots := finset.subtype {i: fin 6 | myF i = 0}
-def nroots := finset.subtype {i: fin 6 | ¬(myF i = 0)}
-#eval fintype.elems(fin 6)
-
-lemma univ_vals: Froots ⊕ nroots = fintype.elems( fin 6) := begin
-
-end
 
 def RηC := (algebra_map ℝ ℂ)
-/- 
+
 example (m n : ℕ)
   (A : matrix (fin m) (fin n) ℂ) :
   let Z : (Aᴴ ⬝ A).is_hermitian := is_hermitian_transpose_mul_self A,
@@ -97,13 +92,24 @@ begin
   -- rw is_hermitian.conj_transpose_eigenvector_matrix,
   have SU := Z'.spectral_theorem,
   have SV := Z.spectral_theorem,
-  let p := (λ i, Z.eigenvalues i = 0),
-  have zero_eigs := finset.subtype (λ i, Z.eigenvalues i = 0),
-  let posi_eigs := zero_eigsᶜ,
-  
+  let pn := (λ i, ¬(Z.eigenvalues i = 0)),
+  let pm := (λ i, ¬(Z'.eigenvalues i = 0)),
+  have en := equiv.sum_compl pn,
+  have em := equiv.sum_compl pm,
+  let V' := reindex (equiv.refl (fin n)) en.symm V,
+  have Va := colpart₁ V',
+  have Vb := colpart₂ V',
+  let S := reindex en.symm en.symm (diagonal (Z.eigenvalues)),
+  have S₁₁ := S.to_blocks₁₁,
+  have S₁₂ := S.to_blocks₁₂,
+  have S₂₁ := S.to_blocks₂₁,
+  have S₂₂ := S.to_blocks₂₂,
+  have: S₁₂ = 0,{sorry,},
+  have: S₂₁ = 0,{sorry,},
+  have: S₂₂ = 0,{sorry,},
 
 end
- -/
+
 
 
 /- lemma svd_decompose: 
