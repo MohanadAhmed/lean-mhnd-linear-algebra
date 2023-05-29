@@ -1,8 +1,8 @@
 [package]
 name = "lean-mhnd-linear-algebra"
 version = "0.1"
-lean_version = "leanprover-community/lean:3.50.3"
+lean_version = "leanprover-community/lean:3.51.1"
 path = "src"
 
 [dependencies]
-mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "47a1a73351de8dd6c8d3d32b569c8e434b03ca47"}
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "e3e30a5c801cd7ce00eeb3644200016669f9ed3e"}
