@@ -9,6 +9,7 @@ open_locale matrix complex_conjugate big_operators
 
 variables {F: Type*}[field F][is_R_or_C F]
 variables m n : ℕ
+variables [ne_zero m][ne_zero n]
 variables A: matrix (fin m) (fin n) ℂ
 
 lemma mul_star_self_nonneg  (v: (fin n) → ℂ): 0 ≤ is_R_or_C.re((star v) ⬝ᵥ v) := 
@@ -71,10 +72,34 @@ def colpart₂ (A : matrix (M) (N ⊕ L) F) : matrix M L F :=
 --   exact eq.decidable a 2,
 -- end
 
+def pn := (λ i, ¬((is_hermitian_transpose_mul_self A).eigenvalues i = 0))
+def pm := (λ i, ¬((is_hermitian_mul_conj_transpose_self A).eigenvalues i = 0))
+def ex := {j: fin n // (pn m n A) j} ≃ {i: fin m // (pm m n A) i}
+
+
+/- lemma eigvs_of_AAh_AhA
+  (A : matrix (fin m) (fin n) ℂ) (i: fin n)
+  (e: {i: fin m // (is_hermitian_mul_conj_transpose_self A).eigenvalues i ≠ 0} ≃
+      {j: fin n // (is_hermitian_transpose_mul_self A).eigenvalues j ≠ 0} )
+  (hi: (is_hermitian_transpose_mul_self A).eigenvalues i ≠ 0):
+  let 
+    v := ((is_hermitian_transpose_mul_self A).eigenvector_matrix_inv i), 
+    u := ((is_hermitian_mul_conj_transpose_self A).eigenvector_matrix_inv (⇑(e i))),
+    σ := (is_hermitian_transpose_mul_self A).eigenvalues i)
+  in
+  u := σ • A.mul_vec v := 
+begin
+
+end -/
 
 
 def RηC := (algebra_map ℝ ℂ)
 
+/- We want to say that for a matrix A: with vᵢ an eigenvecter of AᴴA and with eigenvalue
+σᵢ, then σᵢ⁻¹Avᵢ is an eigenvector of (AAᴴ). This can be seen by:
+  (AᴴA)vᵢ = σᵢvᵢ → A(AᴴA)vᵢ = σᵢAvᵢ → (AAᴴ)(Avᵢ)=σᵢ(Avᵢ)
+-/
+/- 
 example (m n : ℕ)
   (A : matrix (fin m) (fin n) ℂ) :
   let Z : (Aᴴ ⬝ A).is_hermitian := is_hermitian_transpose_mul_self A,
@@ -92,24 +117,28 @@ begin
   -- rw is_hermitian.conj_transpose_eigenvector_matrix,
   have SU := Z'.spectral_theorem,
   have SV := Z.spectral_theorem,
+
   let pn := (λ i, ¬(Z.eigenvalues i = 0)),
   let pm := (λ i, ¬(Z'.eigenvalues i = 0)),
   have en := equiv.sum_compl pn,
   have em := equiv.sum_compl pm,
   let V' := reindex (equiv.refl (fin n)) en.symm V,
+  let U' := reindex (equiv.refl (fin m)) em.symm U,
   have Va := colpart₁ V',
   have Vb := colpart₂ V',
+  have Ua := colpart₁ U',
+  have Ub := colpart₂ U',
   let S := reindex en.symm en.symm (diagonal (Z.eigenvalues)),
   have S₁₁ := S.to_blocks₁₁,
   have S₁₂ := S.to_blocks₁₂,
   have S₂₁ := S.to_blocks₂₁,
   have S₂₂ := S.to_blocks₂₂,
-  have: S₁₂ = 0,{sorry,},
-  have: S₂₁ = 0,{sorry,},
-  have: S₂₂ = 0,{sorry,},
+  have zS₁₂ : S₁₂ = 0,{sorry,},
+  have zS₂₁ : S₂₁ = 0,{sorry,},
+  have zS₂₂ : S₂₂ = 0,{sorry,},
 
 end
-
+ -/
 
 
 /- lemma svd_decompose: 
