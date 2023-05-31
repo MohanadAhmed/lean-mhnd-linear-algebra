@@ -74,7 +74,7 @@ def colpart₂ (A : matrix (M) (N ⊕ L) F) : matrix M L F :=
 
 def pn := (λ i, ¬((is_hermitian_transpose_mul_self A).eigenvalues i = 0))
 def pm := (λ i, ¬((is_hermitian_mul_conj_transpose_self A).eigenvalues i = 0))
-def ex := {j: fin n // (pn m n A) j} ≃ {i: fin m // (pm m n A) i}
+def ex : {j: fin n // (pn m n A) j} ≃ {i: fin m // (pm m n A) i} := sorry
 
 
 /- lemma eigvs_of_AAh_AhA
