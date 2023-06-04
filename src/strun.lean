@@ -40,7 +40,7 @@ begin
   apply matrix.is_unit_det_of_invertible,
 end
 
-noncomputable theory
+--noncomputable theory
 
 open linear_map matrix set submodule
 open_locale matrix big_operators
