@@ -10,14 +10,17 @@ import data.matrix.basic
 import data.matrix.rank
 import rank_surj_inv
 import algebra.star.basic
+import data.fin.tuple.sort
 
 -- open matrix 
 open complex
-open_locale matrix big_operators 
+open_locale matrix big_operators
 
 variables {m n R: Type*}
 variables [fintype m][fintype n][decidable_eq m][decidable_eq n]
 variables [field R][is_R_or_C R][partial_order R][star_ordered_ring R][decidable_eq R]
+
+instance Cq := complex.star_ordered_ring
 
 lemma modified_spectral_theorem (A: matrix n n ℂ)(hA: A.is_hermitian) :
   A = (hA.eigenvector_matrix) ⬝ 
@@ -92,3 +95,28 @@ begin
   simp only [of_real_eq_zero, fintype.card_subtype_compl, nat.cast_id],
 end
 
+lemma card_nonzero_eigs_AhA_AAh_eq (A: matrix m n ℂ):
+    (fintype.card {i // ((is_hermitian_mul_conj_transpose_self A).eigenvalues) i ≠ 0}) = 
+    (fintype.card {i // ((is_hermitian_transpose_mul_self A).eigenvalues) i ≠ 0}) :=
+begin
+  -- intros eigsAhA eigsAAh,
+  rw [← rank_eq_count_nonzero_eigs', ← rank_eq_count_nonzero_eigs', matrix.rank_self_mul_conj_transpose,
+    matrix.rank_conj_transpose_mul_self],
+end
+
+noncomputable def equiv_non_zero_singular_vals (A: matrix m n ℂ)
+  := fintype.equiv_of_card_eq (card_nonzero_eigs_AhA_AAh_eq A)
+
+/-
+  What do I need to go on?
+  I now have an equivalence between the sets of non-zero eigenvalues 
+  in the AhA and AAh matrices. But this does not make them ordered!
+
+  What I want is to sort them in increasing (or decreasing) order.
+  And say that they are the same.
+-/
+
+-- def x: list ℤ := [1, 2, -1, 3, -5]
+-- def fx := (λ i: fin 5, list.nth_le x i (@fin.is_lt 5 i) )
+-- #eval fx (tuple.sort fx) (fin 5).elems
+-- #check fintype.elems (fin 5)
