@@ -25,13 +25,38 @@ variables [field R][decidable_eq R]
 
 instance a := complex.star_ordered_ring
 
+
+variables {f g : n → R} {s t : finset n}
+lemma sum_eq_zero_iff_of_zero_eq1 : (∀ i ∈ s, f i = 0) → (∑ i in s, f i = 0 ↔ ∀ i ∈ s, f i = 0) :=
+begin
+  -- classical,
+  -- apply finset.induction_on s,
+  -- exact λ _, ⟨λ _ _, false.elim, λ _, rfl⟩,
+  -- assume a s ha ih H,
+  -- have : ∀ i ∈ s, 0 = f i, from λ _, H _ ∘ finset.mem_insert_of_mem,
+  -- rw finset.sum_insert,
+  -- -- rw [finset.sum_instert ha, mul_eq_one_iff' (H _ $ finset.mem_insert_self _ _) (finset.one_le_prod' this),
+  -- --   forall_mem_insert, ih this]
+  intro h,
+  split, intro h1, exact h,
+  intro hy,
+  apply finset.induction_on s,
+  simp only [finset.sum_empty],
+  intros a q ha has, rw finset.sum_insert ha, rw has, specialize hy a,
+  have : ∀ i ∈ q, 0 = f i, {
+
+  },
+end
+
 lemma dot_product_star_self_eq_zero' (v: n → ℂ) :
   star v ⬝ᵥ v = 0 ↔ v = 0 := 
 begin
   simp_rw [dot_product_comm, dot_product, pi.star_apply, ← star_ring_end_apply,
     complex.mul_conj, ← complex.sq_abs, complex.ext_iff, im_sum, of_real_im, 
     re_sum, of_real_re, zero_re, zero_im, finset.sum_const_zero, eq_self_iff_true, and_true],
+    
   rw finset.sum_eq_zero_iff_of_nonneg,
+  -- rw finset.sum_eq_zero at h, swap,   
   simp_rw [finset.mem_univ, forall_true_left, pow_eq_zero_iff zero_lt_two, 
     absolute_value.eq_zero, function.funext_iff, pi.zero_apply],
   simp only [pow_nonneg, map_nonneg, implies_true_iff],
