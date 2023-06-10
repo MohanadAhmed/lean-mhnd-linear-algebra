@@ -4,30 +4,49 @@ import linear_algebra.finite_dimensional
 import linear_algebra.matrix.dot_product
 import data.complex.module
 import data.matrix.rank
+import linear_algebra.dual
+import linear_algebra.matrix.dual
 
 open_locale matrix big_operators
 namespace matrix
 open finite_dimensional
 
 variables {l m n o R : Type*} [fintype m] [fintype n] [fintype o]
-variables [comm_ring R]
+variables [decidable_eq m] [decidable_eq n]
+variables [field R]
 
 section star_ordered_field
-variables [field R][has_star R]
+variables [field R][partial_order R][star_ordered_ring R]
+
+theorem matrix.rank_transpose' {𝕜: Type*}
+  [field 𝕜] (A : matrix m n 𝕜) :
+  A.transpose.rank = A.rank :=
+begin
+  rw [A.transpose.rank_eq_finrank_range_to_lin 
+        (pi.basis_fun 𝕜 n).dual_basis (pi.basis_fun 𝕜 m).dual_basis,
+      matrix.to_lin_transpose,  ← linear_map.dual_map_def, 
+      linear_map.finrank_range_dual_map_eq_finrank_range, 
+      matrix.to_lin_eq_to_lin', matrix.to_lin'_apply', matrix.rank],
+end
 
 lemma dot_product_star_self_eq_zero' (v: n → R) :
   star v ⬝ᵥ v = 0 ↔ v = 0 := 
 begin
-  simp_rw [dot_product, pi.star_apply],
+  -- simp_rw [dot_product, pi.star_apply],
   split,
-  intro h,
-  rw star_self
+  intro h, 
+  exact dot_product_star_self_eq_zero.1 h,
+  simp_rw mul_comm at h,
+  -- rw star_self,
   intro h, rw h, simp only [pi.zero_apply, mul_zero, finset.sum_const_zero],
 end
 
 lemma ker_mul_vec_lin_conj_transpose_mul_self1 (A : matrix m n R) :
   linear_map.ker (Aᴴ ⬝ A).mul_vec_lin = linear_map.ker (mul_vec_lin A):=
 begin
+  ext x,
+  simp only [linear_map.mem_ker, mul_vec_lin_apply, ←mul_vec_mul_vec],
+  split,
  /-  ext x,
   simp only [linear_map.mem_ker, mul_vec_lin_apply, ←mul_vec_mul_vec],
   split,
@@ -101,7 +120,7 @@ le_antisymm
   ((rank_transpose_mul_self _).symm.trans_le $ rank_mul_le_left _ _)
   ((rank_transpose_mul_self _).symm.trans_le $ rank_mul_le_left _ _)
 
-@[simp] lemma rank_self_mul_transpose (A : matrix m n R) : (A ⬝ Aᵀ).rank = A.rank :=
+@[simp] lemma rank_self_mul_transpose1 (A : matrix m n R) : (A ⬝ Aᵀ).rank = A.rank :=
 by simpa only [rank_transpose, transpose_transpose] using rank_transpose_mul_self Aᵀ
 
 end linear_ordered_field
@@ -109,7 +128,7 @@ end linear_ordered_field
 /-- The rank of a matrix is the rank of the space spanned by its rows.
 
 TODO: prove this in a generality that works for `ℂ` too, not just `ℚ` and `ℝ`. -/
-lemma rank_eq_finrank_span_row [linear_ordered_field R] [finite m] (A : matrix m n R) :
+lemma rank_eq_finrank_span_row1 [linear_ordered_field R] [finite m] (A : matrix m n R) :
   A.rank = finrank R (submodule.span R (set.range A)) :=
 begin
   casesI nonempty_fintype m,
