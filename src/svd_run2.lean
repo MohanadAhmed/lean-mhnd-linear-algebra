@@ -13,11 +13,11 @@ open_locale matrix big_operators complex_conjugate
 lemma compl_subtypes_ne {z: Type*}[fintype z]{pn: z → Prop} :
      ∀ (i : {a // pn a}) (j : {a // ¬pn a}), (i: z) ≠ (j: z):= 
 begin
-intros i j,
-by_contra' h,
-rw subtype.coe_eq_iff at h,
-cases h with hj hx,
-exact j.prop hj,
+  intros i j,
+  by_contra' h,
+  rw subtype.coe_eq_iff at h,
+  cases h with hj hx,
+  exact j.prop hj,
 end
 
 variables {F: Type*}[field F][is_R_or_C F]
@@ -50,51 +50,7 @@ lemma eigenvalues_nonneg_of_pos_semidef {n : ℕ} (A: matrix (fin n) (fin n) ℂ
   apply hAp.2,
 end
 
-/-
-example {m n : ℕ}
-  (A : matrix (fin m) (fin n) ℂ) :
-  let hAHA : (Aᴴ ⬝ A).is_hermitian := is_hermitian_transpose_mul_self A,
-      S : matrix (fin n) (fin n) ℝ := diagonal hAHA.eigenvalues,
-      pn : fin n → Prop := λ (i : fin n), hAHA.eigenvalues i ≠ 0,
-      e : {a // pn a} ⊕ {a // ¬pn a} ≃ fin n := equiv.sum_compl pn,
-      Se : matrix ({a // pn a} ⊕ {a // ¬pn a})
-        ({a // pn a} ⊕ {a // ¬pn a})
-        ℝ :=
-        (reindex e.symm e.symm) S,
-      S₁₁ : matrix {a // pn a} {a // pn a} ℝ := Se.to_blocks₁₁,
-      S₁₂ : matrix {a // pn a} {a // ¬pn a} ℝ := Se.to_blocks₁₂,
-      S₂₁ : matrix {a // ¬pn a} {a // pn a} ℝ := Se.to_blocks₂₁,
-      S₂₂ : matrix {a // ¬pn a} {a // ¬pn a} ℝ := Se.to_blocks₂₂,
-      Sσ : matrix {a // pn a} {a // pn a} ℝ :=
-          matrix.diagonal (λ i, (real.sqrt (S₁₁ i i)))
-     --    matrix.of (λ i j, ite (i = j) (real.sqrt (S₁₁ i j)) 0)
-  in S = (reindex e e) (from_blocks S₁₁ S₁₂ S₂₁ S₂₂) →
-     S₁₂ = 0 →
-     S₂₁ = 0 →
-     S₂₂ = 0 → invertible Sσ :=
-begin
-  intros hAHA S pn e Se S₁₁ S₁₂ S₂₁ S₂₂ Sσ Sblock hS₁₂ hS₂₁ hS₂₂,
---   apply invertible_of_left_inverse _ matrix.of (λ i j, ite (i = j) (1 / real.sqrt (S₁₁ i j)) 0),
---   change Sσ with S₁₁.map (λ (x : ℝ), ite (x = 0) 0 (real.sqrt x)),
---   funext i j,
-change Sσ with matrix.diagonal (λ i, (real.sqrt (S₁₁ i i))),
-apply invertible_of_right_inverse _  (matrix.diagonal (λ i, (1 / real.sqrt (S₁₁ i i)))),
-rw [matrix.diagonal_mul_diagonal, ← diagonal_one, diagonal_eq_diagonal_iff],
-intro i,
-have diagnz : 0 < S₁₁ i i , 
-{ change S₁₁ with ((reindex e.symm e.symm) (diagonal hAHA.eigenvalues)).to_blocks₁₁,
-  rw to_blocks₁₁,
-  dsimp,
-  rw diagonal_apply_eq,
-  cases lt_or_eq_of_le (eigenvalues_nonneg_of_pos_semidef _ (conj_transpose_mul_self_is_pos_semidef A) i),
-  exact h,
-  exfalso,
-  exact i.prop (h.symm), },
 
-rw mul_one_div_cancel,
-apply real.sqrt_ne_zero'.2 diagnz,
-end
--/
 
 --/-!
 lemma svd_decompose{m n : ℕ} (A: matrix (fin m) (fin n) ℂ): 
@@ -203,15 +159,38 @@ begin
      exact equiv.bijective e.symm, },
 
   let Sσ := matrix.diagonal (λ i, (real.sqrt (S₁₁ i i))),
-  haveI Sσinv : invertible Sσ, sorry,
+  haveI Sσinv : invertible Sσ, 
+  sorry { apply invertible_of_right_inverse _  (matrix.diagonal (λ i, (1 / real.sqrt (S₁₁ i i)))),
+    rw [matrix.diagonal_mul_diagonal, ← diagonal_one, diagonal_eq_diagonal_iff],
+    intro i,
+    have diagnz : 0 < S₁₁ i i , 
+    { change S₁₁ with ((reindex e.symm e.symm) (diagonal hAHA.eigenvalues)).to_blocks₁₁,
+      rw to_blocks₁₁,
+      dsimp,
+      rw diagonal_apply_eq,
+      cases lt_or_eq_of_le (eigenvalues_nonneg_of_pos_semidef _ 
+        (conj_transpose_mul_self_is_pos_semidef A) i),
+      exact h,
+      exfalso,
+      exact i.prop (h.symm), },
+    rw mul_one_div_cancel,
+    apply real.sqrt_ne_zero'.2 diagnz, },
   let U₁ := A⬝V₁⬝((Sσ⁻¹).map RηC),
   have V₁inv : V₁ᴴ⬝V₁ = 1, sorry,
   have U₁inv : U₁ᴴ⬝U₁ = 1, sorry,
   
-  have: U₁⬝((Sσ).map RηC) = A ⬝ V₁, {
-    sorry,
-  },
+  have: U₁⬝((Sσ).map RηC) = A ⬝ V₁, 
+  sorry { change U₁ with A⬝V₁⬝((Sσ⁻¹).map RηC),
+    rw [matrix.mul_assoc, ← matrix.map_mul, nonsing_inv_mul, matrix.map_one, matrix.mul_one],
+    exact map_zero RηC, 
+    exact map_one RηC, 
+    exact (is_unit_det_of_invertible Sσ), },
   
+  have : A⬝V₂ = 0, {
+    clear Sσinv,
+    extract_goal,
+  },
+
 --   {
 --      calc U₁ᴴ⬝U₁ = 
 --   }
@@ -231,34 +210,6 @@ begin
 --      rw this, rw V₁inv,
 --   },
 end 
---/
 
-#exit
+-- -/
 
-/- namespace svd
-variable (A: matrix m n ℂ)
-
-def RηC := algebra_map ℝ ℂ
-/- ## AᴴA is eigendecomposable into V Q Vᴴ-/
-noncomputable def V := (is_hermitian_transpose_mul_self A).eigenvector_matrix
-noncomputable def Q := (diagonal ((is_hermitian_transpose_mul_self A).eigenvalues)).map RηC
-
-lemma hermitianAhA_eigendeomposable: (Aᴴ⬝A) = (V A)⬝(Q A)⬝(V A)ᴴ := sorry
-
-/- ## We can repartition Q into zero and non-zero eigenvalue entries -/
-def ppos := (λ i,  (is_hermitian_transpose_mul_self A).eigenvalues i = 0)
--- noncomputable def p_dec: decidable_pred (ppos A) := begin
---   unfold decidable_pred,
---   intro a,
---   rw ppos, dsimp,
---   exact real.decidable_eq _ _,
--- end
-
-noncomputable def Q11 := A
-
-def e := equiv.sum_compl (ppos A)
-
--- /- ## We show that AᴴA is positive semidefinite -/
--- lemma conj_transpose_mul_self_pos_semidef : matrix.pos_semidef (Aᴴ⬝A) := sorry
-
-end svd -/
