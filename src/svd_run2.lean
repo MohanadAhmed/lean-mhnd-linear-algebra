@@ -209,8 +209,9 @@ begin
   have U₁inv : U₁ᴴ⬝U₁ = 1, sorry,
   
   have: U₁⬝((Sσ).map RηC) = A ⬝ V₁, {
-
+    sorry,
   },
+  
 --   {
 --      calc U₁ᴴ⬝U₁ = 
 --   }
