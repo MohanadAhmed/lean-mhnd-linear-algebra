@@ -35,7 +35,7 @@ begin
   intro h, rw [h, matrix.rank_zero],
   intro h,  
   rw [matrix.rank, finrank_eq_zero, linear_map.range_eq_bot, linear_map.ext_iff] at h,
-  simp_rw mul_vec_lin_apply at h,
-  apply range_zero_mat_zero h,
+  simp_rw [mul_vec_lin_apply] at h,
+  exact range_zero_mat_zero h,
 end
 
