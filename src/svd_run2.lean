@@ -8,7 +8,7 @@ import linear_algebra.matrix.pos_def
 import tactic
 
 open matrix
-open_locale matrix big_operators complex_conjugate
+open_locale matrix big_operators
 
 variables {m n p: Type*}
 variables [fintype m][fintype n][fintype p]
@@ -88,7 +88,15 @@ lemma ker_mat_mul_conj_transpose_mul_self (A: matrix m n ℂ)(B: matrix n p ℂ)
   rw [matrix.mul_assoc, h, matrix.mul_zero],
 end
 
-
+lemma modified_spectral_theorem {A: matrix n n ℂ}(hA: A.is_hermitian) :
+  A = (hA.eigenvector_matrix) ⬝ 
+    (matrix.diagonal (coe ∘ hA.eigenvalues)).mul hA.eigenvector_matrix_inv := 
+begin
+  have h := hA.spectral_theorem,
+  replace h := congr_arg (λ x, hA.eigenvector_matrix ⬝  x) h,
+  simp only at h,
+  rwa [← matrix.mul_assoc, hA.eigenvector_matrix_mul_inv, matrix.one_mul] at h,
+end
 
 --/-!
 lemma svd_decompose{m n : ℕ} (A: matrix (fin m) (fin n) ℂ): 
@@ -107,7 +115,13 @@ begin
   let hAHA := is_hermitian_transpose_mul_self A,
   let V := hAHA.eigenvector_matrix,
   let S := diagonal hAHA.eigenvalues,
-  have spectralAHA : (Aᴴ⬝A) = V⬝ S.map RηC ⬝ Vᴴ, {sorry,},
+  have SRηC : S.map RηC = diagonal (coe ∘ hAHA.eigenvalues),
+  sorry { change S with diagonal hAHA.eigenvalues,
+   rw [matrix.diagonal_map (map_zero _), RηC, complex.coe_algebra_map],},
+  have spectralAHA : (Aᴴ⬝A) = V⬝ S.map RηC ⬝ Vᴴ, 
+  sorry { change V with hAHA.eigenvector_matrix,
+    rw [SRηC, matrix.mul_assoc, matrix.is_hermitian.conj_transpose_eigenvector_matrix],
+    apply modified_spectral_theorem hAHA, },
 
   let pn := λ i, hAHA.eigenvalues i ≠ 0,
   let e := equiv.sum_compl pn,
@@ -237,7 +251,7 @@ begin
 
   
   let U₁ := A⬝V₁⬝((Sσ⁻¹).map RηC),
-  have V₁inv : V₁ᴴ⬝V₁ = 1, sorry,
+  have V₁inv : V₁ᴴ⬝V₁ = 1, exact Vbh.1,
   have U₁inv : U₁ᴴ⬝U₁ = 1, sorry,
   
   have U₁Sσ : U₁⬝((Sσ).map RηC) = A ⬝ V₁, 
@@ -252,24 +266,15 @@ begin
     apply (ker_mat_mul_conj_transpose_mul_self _ _).1 h,
     rw [reducedSpectral, matrix.mul_assoc, (Vbh.2.1), matrix.mul_zero], },
 
---   {
---      calc U₁ᴴ⬝U₁ = 
---   }
---   have : U₁ᴴ⬝U₁ = 1, {
---      change U₁ with A⬝V₁⬝(S₁₁⁻¹).map RηC,
---      rw conj_transpose_mul,
---      rw conj_transpose_mul,
---      rw matrix.mul_assoc,
---      rw matrix.mul_assoc,
---      rw ← matrix.mul_assoc Aᴴ,
---      rw ← matrix.mul_assoc Aᴴ,
---      simp_rw reducedSpectral,
---      have : (S₁₁⁻¹.map ⇑RηC)ᴴ ⬝ (V₁ᴴ ⬝ (V₁ ⬝ S₁₁.map ⇑RηC ⬝ V₁ᴴ ⬝ V₁ ⬝ S₁₁⁻¹.map ⇑RηC)) = 
---      (S₁₁⁻¹.map ⇑RηC)ᴴ ⬝ (V₁ᴴ ⬝ V₁) ⬝ S₁₁.map ⇑RηC ⬝ (V₁ᴴ ⬝ V₁) ⬝ (S₁₁⁻¹.map ⇑RηC),{
---           sorry,
---      },
---      rw this, rw V₁inv,
---   },
+  have : (from_blocks U₁ (0: matrix (fin m) {a // ¬pn a} ℂ) ![] ![]) ⬝
+    ((from_blocks Sσ S₁₂ S₂₁ S₂₂).map RηC) = from_blocks (A⬝V₁) (A⬝V₂) ![] ![], 
+  sorry { rw from_blocks_map, rw from_blocks_multiply,
+    rw [AV₂, hS₁₂, hS₂₁, hS₂₂],
+    simp_rw [matrix.zero_mul, (matrix.map_zero _ (map_zero RηC)), matrix.mul_zero, 
+      zero_add, add_zero, matrix.empty_mul],
+    congr,
+    exact U₁Sσ, },
+  
 end 
 
 -- -/
