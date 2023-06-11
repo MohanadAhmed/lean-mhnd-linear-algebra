@@ -88,6 +88,17 @@ lemma ker_mat_mul_conj_transpose_mul_self (A: matrix m n ℂ)(B: matrix n p ℂ)
   rw [matrix.mul_assoc, h, matrix.mul_zero],
 end
 
+lemma ker_mat_mul_self_conj_transpose (A: matrix n m ℂ)(B: matrix n p ℂ) :
+  (A⬝Aᴴ)⬝B = 0 ↔ Aᴴ⬝B = 0 := begin
+  split,
+  swap,
+  intro h, rw [matrix.mul_assoc, h, matrix.mul_zero],
+  intro h,
+  rw ← conj_transpose_conj_transpose A at h,
+  nth_rewrite 1 conj_transpose_conj_transpose at h,
+  exact (ker_mat_mul_conj_transpose_mul_self (Aᴴ) B).1 h,
+end
+
 lemma modified_spectral_theorem {A: matrix n n ℂ}(hA: A.is_hermitian) :
   A = (hA.eigenvector_matrix) ⬝ 
     (matrix.diagonal (coe ∘ hA.eigenvalues)).mul hA.eigenvector_matrix_inv := 
@@ -171,16 +182,12 @@ begin
   let eb : (fin n) ⊕ (fin 0) ≃ (fin n) , { exact equiv.sum_empty (fin n) (fin 0) },
   let V₁ := ((reindex eb.symm e.symm) V).to_blocks₁₁,
   let V₂ := ((reindex eb.symm e.symm) V).to_blocks₁₂,
-  let xV₁ : matrix (fin 0) {a // pn a} ℂ := ![],
-  let xV₂ : matrix (fin 0) {a // ¬pn a} ℂ := ![],
-  have Vblock : V = (reindex eb e (from_blocks V₁ V₂ xV₁ xV₂)), 
+  have Vblock : V = (reindex eb e (from_blocks V₁ V₂ ![] ![])), 
   sorry {  apply_fun (reindex eb.symm e.symm),
      simp only [reindex_apply, equiv.symm_symm, submatrix_submatrix, 
           equiv.symm_comp_self, submatrix_id_id],
      funext i j,
      cases i, cases j, refl, refl,
-     change xV₁ with vec_empty,
-     change xV₂ with vec_empty,
      rw submatrix_apply, 
      cases j;
      fin_cases i, },
@@ -266,15 +273,32 @@ begin
     apply (ker_mat_mul_conj_transpose_mul_self _ _).1 h,
     rw [reducedSpectral, matrix.mul_assoc, (Vbh.2.1), matrix.mul_zero], },
 
-  have : (from_blocks U₁ (0: matrix (fin m) {a // ¬pn a} ℂ) ![] ![]) ⬝
-    ((from_blocks Sσ S₁₂ S₂₁ S₂₂).map RηC) = from_blocks (A⬝V₁) (A⬝V₂) ![] ![], 
-  sorry { rw from_blocks_map, rw from_blocks_multiply,
-    rw [AV₂, hS₁₂, hS₂₁, hS₂₂],
-    simp_rw [matrix.zero_mul, (matrix.map_zero _ (map_zero RηC)), matrix.mul_zero, 
-      zero_add, add_zero, matrix.empty_mul],
-    congr,
-    exact U₁Sσ, },
-  
+  let hAAH := is_hermitian_mul_conj_transpose_self A,
+  let U := (hAAH).eigenvector_matrix,
+  let pm := λ i, hAAH.eigenvalues i ≠ 0,
+  let em := equiv.sum_compl pm,
+  let ebm : (fin m) ⊕ (fin 0) ≃ (fin m) , { exact equiv.sum_empty (fin m) (fin 0) },
+  let U₂ := ((reindex ebm.symm em.symm) U).to_blocks₁₂,
+
+  have nzeigs_eqcard : fintype.card {a // pm a} = fintype.card {a // pn a}, 
+  { sorry, },
+
+  have ee : {a // pm a} ≃ {a // pn a}, 
+  { exact (fintype.equiv_of_card_eq nzeigs_eqcard),},
+
+  -- have : (
+  --   from_blocks 
+  --     (reindex (equiv.refl (fin m)) ee.symm U₁) 
+  --     (U₂: matrix (fin m) {a // ¬pm a} ℂ) 
+  --     ![] ![]) ⬝
+  --   ((from_blocks Sσ S₁₂ S₂₁ S₂₂).map RηC) = from_blocks (A⬝V₁) (A⬝V₂) ![] ![], 
+  -- sorry { rw from_blocks_map, rw from_blocks_multiply,
+  --   rw [AV₂, hS₁₂, hS₂₁, hS₂₂],
+  --   simp_rw [matrix.zero_mul, (matrix.map_zero _ (map_zero RηC)), matrix.mul_zero, 
+  --     zero_add, add_zero, matrix.empty_mul],
+  --   congr,
+  --   exact U₁Sσ, },
+
 end 
 
 -- -/
