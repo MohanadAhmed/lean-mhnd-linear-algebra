@@ -12,7 +12,7 @@ import rank_surj_inv
 import algebra.star.basic
 import data.fin.tuple.sort
 
--- open matrix 
+-- open matrix
 open complex
 open_locale matrix big_operators
 
@@ -23,8 +23,8 @@ variables [field R][is_R_or_C R][partial_order R][star_ordered_ring R][decidable
 instance Cq := complex.star_ordered_ring
 
 lemma modified_spectral_theorem (A: matrix n n ℂ)(hA: A.is_hermitian) :
-  A = (hA.eigenvector_matrix) ⬝ 
-    (matrix.diagonal (coe ∘ hA.eigenvalues)) ⬝ hA.eigenvector_matrix_inv := 
+  A = (hA.eigenvector_matrix) ⬝
+    (matrix.diagonal (coe ∘ hA.eigenvalues)) ⬝ hA.eigenvector_matrix_inv :=
 begin
   have h := hA.spectral_theorem,
   replace h := congr_arg (λ x, hA.eigenvector_matrix ⬝  x) h,
@@ -34,10 +34,10 @@ begin
 end
 
 lemma rank_eq_rank_diagonal (A: matrix n n ℂ)(hA: A.is_hermitian) :
-  A.rank = (matrix.diagonal ((coe ∘ hA.eigenvalues): n → ℂ)).rank :=     
+  A.rank = (matrix.diagonal ((coe ∘ hA.eigenvalues): n → ℂ)).rank :=
 begin
-  nth_rewrite_lhs 0 [modified_spectral_theorem A hA],  
-  rw rank_mul_unit,  
+  nth_rewrite_lhs 0 [modified_spectral_theorem A hA],
+  rw rank_mul_unit,
   rw rank_mul_unit',
   apply matrix.is_unit_det_of_invertible,
   apply matrix.is_unit_det_of_invertible,
@@ -70,7 +70,7 @@ begin
   have hd : disjoint {i : n | w i ≠ 0} {i : n | w i = 0} := disjoint_compl_left,
   have B₁ := supr_range_std_basis_eq_infi_ker_proj ℂ (λi:n, ℂ) hd hu (set.to_finite _),
   have B₂ := @infi_ker_proj_equiv ℂ _ _ (λi:n, ℂ) _ _ _ _ (by simp; apply_instance) hd hu,
-  rw matrix.rank, 
+  rw matrix.rank,
   rw ← to_lin'_apply',
   rw range_diagonal,
   rw B₁,
@@ -82,21 +82,29 @@ end
 
 lemma rank_eq_count_nonzero_eigs (A: matrix n n ℂ)(hA: A.is_hermitian) :
   A.rank =  ↑(fintype.card {i // (coe∘hA.eigenvalues: n → ℂ) i ≠ 0}) :=
-begin   
+begin
   rw rank_eq_rank_diagonal A hA,
   rw rank_diagonal_matrix,
 end
 
 lemma rank_eq_count_nonzero_eigs' (A: matrix n n ℂ)(hA: A.is_hermitian) :
   A.rank =  (fintype.card {i // (hA.eigenvalues) i ≠ 0}) :=
-begin   
+begin
+  rw rank_eq_rank_diagonal A hA,
+  rw rank_diagonal_matrix,
+  simp only [of_real_eq_zero, fintype.card_subtype_compl, nat.cast_id],
+end
+
+lemma card_sub_rank_eq_count_zero_eigs' (A: matrix n n ℂ)(hA: A.is_hermitian) :
+  A.rank =  (fintype.card n) - (fintype.card {i // (hA.eigenvalues) i = 0}) :=
+begin
   rw rank_eq_rank_diagonal A hA,
   rw rank_diagonal_matrix,
   simp only [of_real_eq_zero, fintype.card_subtype_compl, nat.cast_id],
 end
 
 lemma card_nonzero_eigs_AhA_AAh_eq (A: matrix m n ℂ):
-    (fintype.card {i // ((is_hermitian_mul_conj_transpose_self A).eigenvalues) i ≠ 0}) = 
+    (fintype.card {i // ((is_hermitian_mul_conj_transpose_self A).eigenvalues) i ≠ 0}) =
     (fintype.card {i // ((is_hermitian_transpose_mul_self A).eigenvalues) i ≠ 0}) :=
 begin
   -- intros eigsAhA eigsAAh,
@@ -109,7 +117,7 @@ noncomputable def equiv_non_zero_singular_vals (A: matrix m n ℂ)
 
 /-
   What do I need to go on?
-  I now have an equivalence between the sets of non-zero eigenvalues 
+  I now have an equivalence between the sets of non-zero eigenvalues
   in the AhA and AAh matrices. But this does not make them ordered!
 
   What I want is to sort them in increasing (or decreasing) order.
@@ -120,3 +128,23 @@ noncomputable def equiv_non_zero_singular_vals (A: matrix m n ℂ)
 -- def fx := (λ i: fin 5, list.nth_le x i (@fin.is_lt 5 i) )
 -- #eval fx (tuple.sort fx) (fin 5).elems
 -- #check fintype.elems (fin 5)
+
+
+lemma xeigs {m n r : ℕ}[ne_zero m][ne_zero n](A: matrix (fin m) (fin n) ℂ) (hr: A.rank = r)
+  (hrm: r ≤ m)(hrn: r ≤ n):
+  let
+    eigAHA := (matrix.is_hermitian_transpose_mul_self A).eigenvalues,
+    sAHA := tuple.sort eigAHA
+  in
+  ∀ i, i < (n - r) →
+    eigAHA (sAHA (i)) = 0 :=
+begin
+  intros eigAHA sAHA,
+  intros i hi,
+  by_cases r = 0,
+  rw h at hr, 
+  rw ←  rank_conj_transpose_mul_self A at hr,
+  rw card_sub_rank_eq_count_zero_eigs' (Aᴴ⬝A) (matrix.is_hermitian_transpose_mul_self A) at hr,
+  rw nat.sub_eq_iff_eq_add at hr,
+  rw zero_add at hr,
+end
