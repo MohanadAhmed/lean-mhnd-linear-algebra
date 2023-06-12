@@ -140,6 +140,37 @@ begin
 end
 -/
 
+lemma ker_mat_mul_self_conj_transpose (A: matrix n m ℂ)(B: matrix n p ℂ) :
+  (A⬝Aᴴ)⬝B = 0 ↔ Aᴴ⬝B = 0 := begin
+  sorry,
+end
+
+lemma modified_spectral_theorem {A: matrix n n ℂ}(hA: A.is_hermitian) :
+  A = (hA.eigenvector_matrix) ⬝ 
+    (matrix.diagonal (coe ∘ hA.eigenvalues)).mul hA.eigenvector_matrix_inv := 
+begin
+  sorry,
+end
+
+lemma matrix.left_mul_inj_of_invertible (P : matrix m m R) [invertible P] :
+  function.injective (λ (x : matrix m n R), P ⬝ x) := 
+begin
+  let hdetP_unit := matrix.is_unit_det_of_invertible P,
+  rintros x a hax, 
+  replace hax := congr_arg (λ (x : matrix m n R), P⁻¹ ⬝ x) hax,
+  simp only [inv_mul_cancel_left_of_invertible] at hax,
+  exact hax,
+end
+
+lemma matrix.is_hermitian.eigenvector_matrix_mul_inv' 
+{𝕜 : Type u_1} [is_R_or_C 𝕜] [decidable_eq 𝕜] {n : Type u_2} [fintype n] [decidable_eq n] 
+{A : matrix n n 𝕜} (hA : A.is_hermitian) :
+hA.eigenvector_matrix_inv.mul hA.eigenvector_matrix = 1 := begin
+sorry,
+end
+
+--/-!
+
 example {m n : ℕ}
   (A : matrix (fin m) (fin n) ℂ) :
   let hAHA : (Aᴴ ⬝ A).is_hermitian := (is_hermitian_transpose_mul_self A),
@@ -164,7 +195,7 @@ example {m n : ℕ}
         diagonal (λ (i : {a // pn a}), real.sqrt (S₁₁ i i)),
       U₁ : matrix (fin m) {a // pn a} ℂ :=
         A ⬝ V₁ ⬝ Sσ⁻¹.map RηC,
-      hAAH : (A ⬝ Aᴴ).is_hermitian := _,
+      hAAH : (A ⬝ Aᴴ).is_hermitian := (is_hermitian_mul_conj_transpose_self A),
       U : matrix (fin m) (fin m) ℂ := hAAH.eigenvector_matrix,
       pm : fin m → Prop := λ (i : fin m), hAAH.eigenvalues i ≠ 0,
       em : {a // pm a} ⊕ {a // ¬pm a} ≃ fin m := equiv.sum_compl pm,
@@ -198,7 +229,31 @@ begin
   intros hAHA V S pn e Se S₁₁ S₁₂ S₂₁ S₂₂ eb V₁ V₂ Sσ U₁ hAAH U pm em ebm U₂ SRηC 
     spectralAHA Sblock hS₁₂ hS₂₁ hS₂₂ Vblock reducedSpectral Sσ_inv S₁₁diag threeSs 
     Vinv Vbh S₁₁diag_1 V₁inv U₁inv U₁Sσ AV₂,
+  rw ← ker_mat_mul_self_conj_transpose,
+  have spectralAAH := modified_spectral_theorem hAAH,
+  -- haveI : fintype {a // ¬pm a} := sorry,
+  -- haveI : fintype {a // pm a} := sorry,
+  -- haveI : fintype {a // pn a} := sorry,
+  -- haveI : fintype {a // ¬pn a} := sorry,
+  rw spectralAAH,
+  apply_fun matrix.mul hAAH.eigenvector_matrix_inv,
+  rw ← matrix.mul_assoc,
+  rw ← matrix.mul_assoc,
+  rw matrix.is_hermitian.eigenvector_matrix_mul_inv' hAAH,
+  rw matrix.one_mul,
+  rw matrix.mul_zero,
+  apply_fun (reindex (em.symm) (equiv.refl _)),
+  rw reindex_apply,
+  rw reindex_apply,
+  rw submatrix_zero,
+  simp only [equiv.symm_symm, equiv.refl_symm, equiv.coe_refl, dmatrix.zero_apply],
+  rw ← submatrix_mul_equiv _ _ _ (equiv.refl _) _,
+  rw ← submatrix_mul_equiv _ _ _ em _,
+  funext i j,
+  cases i,
+  simp only [submatrix_diagonal_equiv, equiv.coe_refl, submatrix_id_id, dmatrix.zero_apply],
   
+  -- rw ← submatrix_mul_equiv _ _ _ em _,
 end
 
 

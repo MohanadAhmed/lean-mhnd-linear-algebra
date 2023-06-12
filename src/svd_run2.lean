@@ -114,6 +114,13 @@ begin
   rwa [← matrix.mul_assoc, hA.eigenvector_matrix_mul_inv, matrix.one_mul] at h,
 end
 
+lemma matrix.is_hermitian.eigenvector_matrix_mul_inv' 
+{𝕜 : Type u_1} [is_R_or_C 𝕜] [decidable_eq 𝕜] {n : Type u_2} [fintype n] [decidable_eq n] 
+{A : matrix n n 𝕜} (hA : A.is_hermitian) :
+hA.eigenvector_matrix_inv.mul hA.eigenvector_matrix = 1 := begin
+sorry,
+end
+
 --/-!
 lemma svd_decompose{m n : ℕ} (A: matrix (fin m) (fin n) ℂ): 
 ∃ 
