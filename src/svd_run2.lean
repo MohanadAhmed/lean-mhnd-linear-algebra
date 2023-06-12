@@ -27,6 +27,11 @@ end
 
 variables {F: Type*}[field F][is_R_or_C F]
 def RηC := algebra_map ℝ ℂ
+lemma semiconj_RηC : function.semiconj ⇑RηC star star :=
+begin
+  intro x,
+  simp_rw [RηC, is_R_or_C.star_def, is_R_or_C.conj_to_real, complex.coe_algebra_map, is_R_or_C.conj_of_real],
+end
 
 lemma mul_star_self_nonneg (v: n → ℂ): 0 ≤ is_R_or_C.re((star v) ⬝ᵥ v) := 
 begin
@@ -144,7 +149,7 @@ begin
   let S₂₂ := Se.to_blocks₂₂,
 
   have Sblock : S = reindex e e (from_blocks S₁₁ S₁₂ S₂₁ S₂₂), 
-     { apply_fun reindex e.symm e.symm,
+  sorry { apply_fun reindex e.symm e.symm,
      simp only [reindex_apply, equiv.symm_symm, submatrix_submatrix, 
         equiv.symm_comp_self, submatrix_id_id],
      funext i j,
@@ -218,8 +223,24 @@ begin
      exact equiv.bijective e.symm, },
 
   let Sσ := matrix.diagonal (λ i, (real.sqrt (S₁₁ i i))),
-  haveI Sσinv : invertible Sσ, 
-  sorry { apply invertible_of_right_inverse _  (matrix.diagonal (λ i, (1 / real.sqrt (S₁₁ i i)))),
+  -- haveI Sσinv : invertible Sσ, 
+  -- sorry { apply invertible_of_right_inverse _  (matrix.diagonal (λ i, (1 / real.sqrt (S₁₁ i i)))),
+  --   rw [matrix.diagonal_mul_diagonal, ← diagonal_one, diagonal_eq_diagonal_iff],
+  --   intro i,
+  --   have diagnz : 0 < S₁₁ i i , 
+  --   { change S₁₁ with ((reindex e.symm e.symm) (diagonal hAHA.eigenvalues)).to_blocks₁₁,
+  --     rw to_blocks₁₁,
+  --     dsimp,
+  --     rw diagonal_apply_eq,
+  --     cases lt_or_eq_of_le (eigenvalues_nonneg_of_pos_semidef _ 
+  --       (conj_transpose_mul_self_is_pos_semidef A) i),
+  --     exact h,
+  --     exfalso,
+  --     exact i.prop (h.symm), },
+  --   rw mul_one_div_cancel,
+  --   apply real.sqrt_ne_zero'.2 diagnz, },
+  have Sσ_inv : Sσ⁻¹ = (matrix.diagonal (λ i, (1 / real.sqrt (S₁₁ i i)))), 
+  sorry { rw inv_eq_right_inv,
     rw [matrix.diagonal_mul_diagonal, ← diagonal_one, diagonal_eq_diagonal_iff],
     intro i,
     have diagnz : 0 < S₁₁ i i , 
@@ -234,6 +255,29 @@ begin
       exact i.prop (h.symm), },
     rw mul_one_div_cancel,
     apply real.sqrt_ne_zero'.2 diagnz, },
+  have S₁₁diag : S₁₁ = diagonal (λ i:{a // pn a}, hAHA.eigenvalues i),
+  sorry { change S₁₁ with Se.to_blocks₁₁,
+    change Se with ((reindex e.symm e.symm) S),
+    rw to_blocks₁₁,
+    simp only [reindex_apply, equiv.symm_symm, submatrix_diagonal_equiv],
+    funext j k, 
+    rw of_apply,
+    by_cases hjk: j = k, rw hjk, 
+    rw [diagonal_apply_eq, diagonal_apply_eq, function.comp_app, equiv.sum_compl_apply_inl],
+    rw [diagonal_apply_ne, diagonal_apply_ne], 
+    exact hjk,
+    simp only [ne.def], exact hjk, },
+
+  have threeSs : Sσᴴ⁻¹ ⬝ (S₁₁ ⬝ Sσ⁻¹) = 1, 
+  sorry { rw [← matrix.conj_transpose_nonsing_inv, Sσ_inv, S₁₁diag, diagonal_conj_transpose,
+      has_trivial_star.star_trivial, diagonal_mul_diagonal, diagonal_mul_diagonal, ← diagonal_one,
+      diagonal_eq_diagonal_iff],
+    intro i,
+    rw [diagonal_apply_eq, mul_comm, mul_assoc, div_mul_div_comm, one_mul, ← real.sqrt_mul,
+      real.sqrt_mul_self, mul_div_cancel'], exact i.prop, 
+      all_goals 
+      { apply eigenvalues_nonneg_of_pos_semidef, 
+        apply conj_transpose_mul_self_is_pos_semidef,}, },
 
   have Vinv : Vᴴ⬝V = 1, 
   sorry { apply_fun matrix.mul V,
@@ -256,10 +300,31 @@ begin
     rw [← from_blocks_one, from_blocks_inj] at Vinv, 
     exact Vinv},
 
+  have S₁₁diag : S₁₁ = diagonal (λ i:{a // pn a}, hAHA.eigenvalues i), 
+  sorry { change S₁₁ with Se.to_blocks₁₁,
+    change Se with ((reindex e.symm e.symm) S),
+    rw to_blocks₁₁,
+    simp only [reindex_apply, equiv.symm_symm, submatrix_diagonal_equiv],
+    funext j k, 
+    rw of_apply,
+    by_cases hjk: j = k, rw hjk, 
+    rw [diagonal_apply_eq, diagonal_apply_eq, function.comp_app, equiv.sum_compl_apply_inl],
+    rw [diagonal_apply_ne, diagonal_apply_ne], 
+    exact hjk,
+    simp only [ne.def], exact hjk, },
   
   let U₁ := A⬝V₁⬝((Sσ⁻¹).map RηC),
   have V₁inv : V₁ᴴ⬝V₁ = 1, exact Vbh.1,
-  have U₁inv : U₁ᴴ⬝U₁ = 1, sorry,
+  have U₁inv : U₁ᴴ⬝U₁ = 1, 
+  sorry { change U₁ with A ⬝ V₁ ⬝ Sσ⁻¹.map RηC,
+    rw [conj_transpose_mul, conj_transpose_mul, matrix.mul_assoc, matrix.mul_assoc, 
+      matrix.mul_assoc A, ← matrix.mul_assoc Aᴴ],
+    conv_lhs {congr, skip, congr, skip, congr, rw reducedSpectral,},
+    rw [matrix.mul_assoc, ← matrix.mul_assoc _ V₁, V₁inv, matrix.one_mul, matrix.mul_assoc V₁,
+      ← matrix.mul_assoc _ V₁, V₁inv, matrix.one_mul, ← conj_transpose_map, 
+      conj_transpose_nonsing_inv, ← matrix.map_mul, ← matrix.map_mul, threeSs,
+      matrix.map_one RηC (map_zero RηC) (map_one RηC)],
+    exact  semiconj_RηC, },
   
   have U₁Sσ : U₁⬝((Sσ).map RηC) = A ⬝ V₁, 
   sorry { change U₁ with A⬝V₁⬝((Sσ⁻¹).map RηC),
@@ -286,6 +351,8 @@ begin
   have ee : {a // pm a} ≃ {a // pn a}, 
   { exact (fintype.equiv_of_card_eq nzeigs_eqcard),},
 
+  
+  -- extract_goal,
   -- have : (
   --   from_blocks 
   --     (reindex (equiv.refl (fin m)) ee.symm U₁) 
