@@ -352,12 +352,52 @@ begin
   let ebm : (fin m) ⊕ (fin 0) ≃ (fin m) , { exact equiv.sum_empty (fin m) (fin 0) },
   let U₂ := ((reindex ebm.symm em.symm) U).to_blocks₁₂,
 
-  have nzeigs_eqcard : fintype.card {a // pm a} = fintype.card {a // pn a}, 
-  { sorry, },
+  -- have nzeigs_eqcard : fintype.card {a // pm a} = fintype.card {a // pn a}, 
+  -- { sorry, },
 
-  have ee : {a // pm a} ≃ {a // pn a}, 
-  { exact (fintype.equiv_of_card_eq nzeigs_eqcard),},
+  -- have ee : {a // pm a} ≃ {a // pn a}, 
+  -- { exact (fintype.equiv_of_card_eq nzeigs_eqcard),},
 
+  have AAHU₂ : A ⬝ Aᴴ ⬝ U₂ = 0, 
+  sorry { have spectralAAH := modified_spectral_theorem hAAH,
+    rw spectralAAH,
+    apply_fun matrix.mul hAAH.eigenvector_matrix_inv,
+    rw [← matrix.mul_assoc, ← matrix.mul_assoc, matrix.is_hermitian.eigenvector_matrix_mul_inv' hAAH,
+      matrix.one_mul, matrix.mul_zero],
+    apply_fun (reindex (em.symm) (equiv.refl _)),
+    rw [reindex_apply, reindex_apply, submatrix_zero],
+    simp only [equiv.symm_symm, equiv.refl_symm, equiv.coe_refl, dmatrix.zero_apply],
+    rw [← submatrix_mul_equiv _ _ _ (equiv.refl _) _, ← submatrix_mul_equiv _ _ _ em _],
+
+    change U₂ with ((reindex ebm.symm em.symm) U).to_blocks₁₂,
+    change U with hAAH.eigenvector_matrix,
+
+    rw to_blocks₁₂,
+    simp only [submatrix_diagonal_equiv, equiv.coe_refl, reindex_apply, equiv.symm_symm, submatrix_apply, 
+      equiv.sum_empty_apply_inl, equiv.sum_compl_apply_inr, submatrix_id_id, of_apply],
+
+    funext i j,
+    cases i,
+    -- The Range Case
+    { rw matrix.mul_assoc,
+    simp_rw [matrix.mul_apply, finset.mul_sum, diagonal_apply, ite_mul, zero_mul, function.comp_app],
+    simp only [equiv.sum_compl_apply_inl, submatrix_apply, id.def, of_apply, finset.sum_ite_irrel, 
+      finset.sum_const_zero, finset.sum_ite_eq, finset.mem_univ, if_true, dmatrix.zero_apply],
+    rw [← finset.mul_sum, ← mul_apply, matrix.is_hermitian.eigenvector_matrix_mul_inv', 
+      one_apply_ne, mul_zero], apply compl_subtypes_ne, },
+    
+    -- The Kernel Case
+    { simp only [submatrix_diagonal_equiv, equiv.coe_refl, submatrix_id_id, dmatrix.zero_apply],
+      simp_rw [matrix.mul_apply, finset.sum_mul, diagonal_apply, ite_mul, zero_mul, function.comp_app],
+      simp only [equiv.sum_compl_apply_inr, submatrix_apply, id.def, finset.sum_ite_eq, finset.mem_univ, if_true],
+      have : hAAH.eigenvalues i = 0, 
+      { apply not_not.1, rw ← ne.def,
+        apply i.prop, },
+      simp_rw [this, complex.of_real_zero, zero_mul, finset.sum_const_zero], },
+
+    apply matrix.left_mul_inj_of_invertible, },
+
+  have : Aᴴ⬝U₂ = 0, { rw ← ker_mat_mul_self_conj_transpose, rw AAHU₂,},
   
   -- extract_goal,
   -- have : (
