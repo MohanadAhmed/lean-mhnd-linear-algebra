@@ -22,6 +22,9 @@ begin
   simp_rw [RηC, is_R_or_C.star_def, is_R_or_C.conj_to_real, complex.coe_algebra_map, is_R_or_C.conj_of_real],
 end
 
+lemma compl_subtypes_ne {z: Type*}[fintype z]{pn: z → Prop} :
+     ∀ (i : {a // pn a}) (j : {a // ¬pn a}), (i: z) ≠ (j: z):= sorry
+
 lemma conj_transpose_real (A: matrix m n ℝ):
   Aᴴ = Aᵀ := 
 begin
@@ -173,62 +176,32 @@ end
 
 example {m n : ℕ}
   (A : matrix (fin m) (fin n) ℂ) :
-  let hAHA : (Aᴴ ⬝ A).is_hermitian := (is_hermitian_transpose_mul_self A),
-      V : matrix (fin n) (fin n) ℂ := hAHA.eigenvector_matrix,
-      S : matrix (fin n) (fin n) ℝ := diagonal hAHA.eigenvalues,
-      pn : fin n → Prop := λ (i : fin n), hAHA.eigenvalues i ≠ 0,
-      e : {a // pn a} ⊕ {a // ¬pn a} ≃ fin n := equiv.sum_compl pn,
-      Se : matrix ({a // pn a} ⊕ {a // ¬pn a})
-        ({a // pn a} ⊕ {a // ¬pn a})
-        ℝ :=
-        (reindex e.symm e.symm) S,
-      S₁₁ : matrix {a // pn a} {a // pn a} ℝ := Se.to_blocks₁₁,
-      S₁₂ : matrix {a // pn a} {a // ¬pn a} ℝ := Se.to_blocks₁₂,
-      S₂₁ : matrix {a // ¬pn a} {a // pn a} ℝ := Se.to_blocks₂₁,
-      S₂₂ : matrix {a // ¬pn a} {a // ¬pn a} ℝ := Se.to_blocks₂₂,
-      eb : fin n ⊕ fin 0 ≃ fin n := equiv.sum_empty (fin n) (fin 0),
-      V₁ : matrix (fin n) {a // pn a} ℂ :=
-        ((reindex eb.symm e.symm) V).to_blocks₁₁,
-      V₂ : matrix (fin n) {a // ¬pn a} ℂ :=
-        ((reindex eb.symm e.symm) V).to_blocks₁₂,
-      Sσ : matrix {a // pn a} {a // pn a} ℝ :=
-        diagonal (λ (i : {a // pn a}), real.sqrt (S₁₁ i i)),
-      U₁ : matrix (fin m) {a // pn a} ℂ :=
-        A ⬝ V₁ ⬝ Sσ⁻¹.map RηC,
-      hAAH : (A ⬝ Aᴴ).is_hermitian := (is_hermitian_mul_conj_transpose_self A),
-      U : matrix (fin m) (fin m) ℂ := hAAH.eigenvector_matrix,
-      pm : fin m → Prop := λ (i : fin m), hAAH.eigenvalues i ≠ 0,
-      em : {a // pm a} ⊕ {a // ¬pm a} ≃ fin m := equiv.sum_compl pm,
-      ebm : fin m ⊕ fin 0 ≃ fin m := equiv.sum_empty (fin m) (fin 0),
-      U₂ : matrix (fin m) {a // ¬pm a} ℂ :=
+  let 
+    hAAH : (A ⬝ Aᴴ).is_hermitian := (is_hermitian_mul_conj_transpose_self A),
+    S := diagonal hAAH.eigenvalues,
+    pm : fin m → Prop := λ (i : fin m), hAAH.eigenvalues i ≠ 0,
+    em : {a // pm a} ⊕ {a // ¬pm a} ≃ fin m := equiv.sum_compl pm,
+    Se : matrix ({a // pm a} ⊕ {a // ¬pm a})
+      ({a // pm a} ⊕ {a // ¬pm a})
+      ℝ :=
+      (reindex em.symm em.symm) S,
+    S₁₁ := Se.to_blocks₁₁,
+    S₁₂ := Se.to_blocks₁₂,
+    S₂₁ := Se.to_blocks₂₁,
+    S₂₂ := Se.to_blocks₂₂,
+    ebm : fin m ⊕ fin 0 ≃ fin m := equiv.sum_empty (fin m) (fin 0),
+    U : matrix (fin m) (fin m) ℂ := hAAH.eigenvector_matrix,
+    U₂ : matrix (fin m) {a // ¬pm a} ℂ :=
         ((reindex ebm.symm em.symm) U).to_blocks₁₂
-  in S.map RηC = diagonal (coe ∘ hAHA.eigenvalues) →
-     Aᴴ ⬝ A = V ⬝ S.map RηC ⬝ Vᴴ →
-     S = (reindex e e) (from_blocks S₁₁ S₁₂ S₂₁ S₂₂) →
+  in S = (reindex em em) (from_blocks S₁₁ S₁₂ S₂₁ S₂₂) →
      S₁₂ = 0 →
      S₂₁ = 0 →
      S₂₂ = 0 →
-     V = (reindex eb e) (from_blocks V₁ V₂ vec_empty vec_empty) →
-     Aᴴ ⬝ A = V₁ ⬝ S₁₁.map RηC ⬝ V₁ᴴ →
-     Sσ⁻¹ = diagonal (λ (i : {a // pn a}), 1 / real.sqrt (S₁₁ i i)) →
-     S₁₁ = diagonal (λ (i : {a // pn a}), hAHA.eigenvalues ↑i) →
-     Sσᴴ⁻¹ ⬝ (S₁₁ ⬝ Sσ⁻¹) = 1 →
-     Vᴴ ⬝ V = 1 →
-     V₁ᴴ ⬝ V₁ = 1 ∧
-       V₁ᴴ ⬝ V₂ = 0 ∧
-         V₂ᴴ ⬝ V₁ = 0 ∧ V₂ᴴ ⬝ V₂ = 1 →
-     S₁₁ = diagonal (λ (i : {a // pn a}), hAHA.eigenvalues ↑i) →
-     V₁ᴴ ⬝ V₁ = 1 →
-     U₁ᴴ ⬝ U₁ = 1 →
-     U₁ ⬝ Sσ.map RηC = A ⬝ V₁ →
-     A ⬝ V₂ = 0 →
-    --  fintype.card {a // pm a} = fintype.card {a // pn a} →
-    --  {a // pm a} ≃ {a // pn a} →
+     S₁₁ = diagonal (λ (i : {a // pm a}), hAAH.eigenvalues ↑i) →
     Aᴴ⬝U₂ = 0 :=
 begin
-  intros hAHA V S pn e Se S₁₁ S₁₂ S₂₁ S₂₂ eb V₁ V₂ Sσ U₁ hAAH U pm em ebm U₂ SRηC 
-    spectralAHA Sblock hS₁₂ hS₂₁ hS₂₂ Vblock reducedSpectral Sσ_inv S₁₁diag threeSs 
-    Vinv Vbh S₁₁diag_1 V₁inv U₁inv U₁Sσ AV₂,
+  intros hAAH S pm em Se S₁₁ S₁₂ S₂₁ S₂₂  ebm U U₂ Sblock hS₁₂ hS₂₁ hS₂₂ hS₁₁diag,
+  
   rw ← ker_mat_mul_self_conj_transpose,
   have spectralAAH := modified_spectral_theorem hAAH,
   -- haveI : fintype {a // ¬pm a} := sorry,
@@ -236,6 +209,7 @@ begin
   -- haveI : fintype {a // pn a} := sorry,
   -- haveI : fintype {a // ¬pn a} := sorry,
   rw spectralAAH,
+  clear spectralAAH,
   apply_fun matrix.mul hAAH.eigenvector_matrix_inv,
   rw ← matrix.mul_assoc,
   rw ← matrix.mul_assoc,
@@ -249,11 +223,55 @@ begin
   simp only [equiv.symm_symm, equiv.refl_symm, equiv.coe_refl, dmatrix.zero_apply],
   rw ← submatrix_mul_equiv _ _ _ (equiv.refl _) _,
   rw ← submatrix_mul_equiv _ _ _ em _,
+  change U₂ with ((reindex ebm.symm em.symm) U).to_blocks₁₂,
+  change U with hAAH.eigenvector_matrix,
+  rw to_blocks₁₂,
+  simp only [submatrix_diagonal_equiv, equiv.coe_refl, reindex_apply, equiv.symm_symm, submatrix_apply, 
+  equiv.sum_empty_apply_inl, equiv.sum_compl_apply_inr, submatrix_id_id, of_apply],
   funext i j,
   cases i,
-  simp only [submatrix_diagonal_equiv, equiv.coe_refl, submatrix_id_id, dmatrix.zero_apply],
+  { rw matrix.mul_assoc,
+  simp_rw [matrix.mul_apply, finset.mul_sum, diagonal_apply, ite_mul, zero_mul, function.comp_app],
+  simp only [equiv.sum_compl_apply_inl, submatrix_apply, id.def, of_apply, finset.sum_ite_irrel, 
+    finset.sum_const_zero, finset.sum_ite_eq, finset.mem_univ, if_true, dmatrix.zero_apply],
+  rw [← finset.mul_sum, ← mul_apply, matrix.is_hermitian.eigenvector_matrix_mul_inv', 
+    one_apply_ne, mul_zero], apply compl_subtypes_ne, },
+
+  { simp only [submatrix_diagonal_equiv, equiv.coe_refl, submatrix_id_id, dmatrix.zero_apply],
+    simp_rw [matrix.mul_apply, finset.sum_mul, diagonal_apply, ite_mul, zero_mul, function.comp_app],
+    simp only [equiv.sum_compl_apply_inr, submatrix_apply, id.def, finset.sum_ite_eq, finset.mem_univ, if_true],
+    have : hAAH.eigenvalues i = 0, 
+    { apply not_not.1, rw ← ne.def,
+      apply i.prop, },
+    simp_rw [this, complex.of_real_zero, zero_mul, finset.sum_const_zero], },
+
+  apply matrix.left_mul_inj_of_invertible,
+  -- funext i j,
+  -- cases i,
+  -- change U₂ with ((reindex ebm.symm em.symm) U).to_blocks₁₂,
+  -- change U with hAAH.eigenvector_matrix,
+  -- rw to_blocks₁₂,
+  -- simp only [submatrix_diagonal_equiv, equiv.coe_refl, reindex_apply, equiv.symm_symm, 
+  --   submatrix_apply, equiv.sum_empty_apply_inl, equiv.sum_compl_apply_inr, submatrix_id_id,
+  --   dmatrix.zero_apply],
+  -- simp_rw [matrix.mul_apply, finset.sum_mul, diagonal_apply, ite_mul, zero_mul, function.comp_app],
+  -- simp only [equiv.sum_compl_apply_inl, equiv.sum_compl_apply_inr, submatrix_apply, 
+  --   id.def, finset.sum_ite_eq, finset.mem_univ, if_true, of_apply],
+  -- -- simp only [submatrix_diagonal_equiv, equiv.coe_refl, submatrix_id_id, dmatrix.zero_apply],
+  -- -- simp_rw [matrix.mul_apply, finset.sum_mul, diagonal_apply, ite_mul, zero_mul, function.comp_app],
+  -- -- simp only [equiv.sum_compl_apply_inl, submatrix_apply, id.def, finset.sum_ite_eq, finset.mem_univ, if_true],
   
-  -- rw ← submatrix_mul_equiv _ _ _ em _,
+  -- sorry,
+  -- simp only [submatrix_diagonal_equiv, equiv.coe_refl, submatrix_id_id, dmatrix.zero_apply],
+  -- simp_rw [matrix.mul_apply, finset.sum_mul, diagonal_apply, ite_mul, zero_mul, function.comp_app],
+  -- simp only [equiv.sum_compl_apply_inr, submatrix_apply, id.def, finset.sum_ite_eq, finset.mem_univ, if_true],
+  -- have : hAAH.eigenvalues i = 0, {
+  --   apply not_not.1, rw ← ne.def,
+  --   apply i.prop,
+  -- },
+  -- simp_rw [this, complex.of_real_zero, zero_mul, finset.sum_const_zero],
+  -- exact (fin.fintype m),
+  -- apply matrix.left_mul_inj_of_invertible,
 end
 
 
