@@ -462,7 +462,6 @@ begin
   sorry { simp_rw [reindex_apply],
     simp only [equiv.refl_symm, equiv.coe_refl, conj_transpose_submatrix],
     
-    
     rw [← submatrix_id_id (from_blocks (Sσ.map RηC) 0 0 0), ← submatrix_mul],
 
     simp only [from_blocks_multiply, empty_mul_empty, matrix.zero_mul, matrix.mul_zero, 
