@@ -479,6 +479,31 @@ begin
     exact Sσ_is_unit_det,
     exact function.bijective_id,  },
   -- 
+  have fFinal: 
+    ((reindex eb (equiv.refl _)) (from_blocks V₁ V₂ vec_empty vec_empty)) ⬝
+    ((reindex eb (equiv.refl _)) (from_blocks V₁ V₂ vec_empty vec_empty))ᴴ = 1, 
+  sorry {
+    rw [conj_transpose_reindex, reindex_apply, reindex_apply, ← submatrix_mul,
+    from_blocks_conj_transpose, from_blocks_multiply],
+    simp only [mul_empty, of_add_of, pi.const_add, empty_add_empty],
+    change V₁ with ((reindex eb.symm e.symm) V).to_blocks₁₁,
+    change V₂ with ((reindex eb.symm e.symm) V).to_blocks₁₂,
+    simp_rw [to_blocks₁₁, to_blocks₁₂],
+    simp only [reindex_apply, equiv.symm_symm, submatrix_apply, equiv.sum_empty_apply_inl, 
+      equiv.sum_compl_apply_inl, equiv.sum_compl_apply_inr],
+    rw [← submatrix_one_equiv eb.symm, ← from_blocks_one],
+    congr,
+    rw mul_eq_one_comm at Vinv,
+
+    funext x y,
+    simp_rw [dmatrix.add_apply, mul_apply, of_apply, conj_transpose_apply, of_apply,
+        ← conj_transpose_apply],
+    simp_rw fintype.sum_subtype_add_sum_subtype pn (λ g, V x g * Vᴴ g y),
+
+    rw [← mul_apply, Vinv], 
+    simp only [equiv.refl_symm, equiv.coe_refl, function.bijective_id],
+  },
+  apply_fun (λ x, x ⬝(((reindex eb (equiv.refl _)) (from_blocks V₁ V₂ vec_empty vec_empty))ᴴ)) at xFinal,
   sorry,
 end 
 
