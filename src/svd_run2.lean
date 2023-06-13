@@ -114,11 +114,22 @@ begin
   rwa [← matrix.mul_assoc, hA.eigenvector_matrix_mul_inv, matrix.one_mul] at h,
 end
 
-lemma matrix.is_hermitian.eigenvector_matrix_mul_inv' 
-{𝕜 : Type u_1} [is_R_or_C 𝕜] [decidable_eq 𝕜] {n : Type u_2} [fintype n] [decidable_eq n] 
-{A : matrix n n 𝕜} (hA : A.is_hermitian) :
-hA.eigenvector_matrix_inv.mul hA.eigenvector_matrix = 1 := begin
-sorry,
+lemma eigenvector_matrix_inv_mul_self {m: Type*}[fintype m][decidable_eq m]
+  {A: matrix m m ℂ} (hA: is_hermitian A):
+  (hA.eigenvector_matrix_inv)⬝(hA.eigenvector_matrix) = 1 := 
+begin
+  apply_fun hA.eigenvector_matrix.mul,
+  rw ← matrix.mul_assoc,
+  rw [is_hermitian.eigenvector_matrix_mul_inv, matrix.mul_one, matrix.one_mul],
+  exact matrix.left_mul_inj_of_invertible hA.eigenvector_matrix,
+end
+
+lemma eigenvector_matrix_conj_transpose_mul_self {m: Type*}[fintype m][decidable_eq m]
+  {A: matrix m m ℂ} (hA: is_hermitian A):
+  (hA.eigenvector_matrix)ᴴ⬝(hA.eigenvector_matrix) = 1 := 
+begin
+  rw is_hermitian.conj_transpose_eigenvector_matrix,
+  exact eigenvector_matrix_inv_mul_self hA,
 end
 
 --/-!
@@ -157,11 +168,10 @@ begin
 
   have Sblock : S = reindex e e (from_blocks S₁₁ S₁₂ S₂₁ S₂₂), 
   sorry { apply_fun reindex e.symm e.symm,
-     simp only [reindex_apply, equiv.symm_symm, submatrix_submatrix, 
+    simp only [reindex_apply, equiv.symm_symm, submatrix_submatrix, 
         equiv.symm_comp_self, submatrix_id_id],
-     funext i j,
-     cases i; { cases j; refl,}, 
-  },
+    funext i j,
+    cases i; { cases j; refl,},  },
 
   have hS₁₂ : S₁₂ = 0, 
   sorry { change S₁₂ with (reindex e.symm e.symm (diagonal hAHA.eigenvalues)).to_blocks₁₂,
@@ -173,23 +183,23 @@ begin
 
   have hS₂₁ : S₂₁ = 0, 
   sorry { change S₂₁ with (reindex e.symm e.symm (diagonal hAHA.eigenvalues)).to_blocks₂₁,
-     funext i j,
+    funext i j,
     rw [dmatrix.zero_apply, to_blocks₂₁], 
     dsimp,
     rw diagonal_apply_ne',
     apply compl_subtypes_ne, },
   have hS₂₂ : S₂₂ = 0, 
   sorry {  change S₂₂ with (reindex e.symm e.symm (diagonal hAHA.eigenvalues)).to_blocks₂₂,
-     funext i j,
-     rw [dmatrix.zero_apply, to_blocks₂₂], 
-     dsimp,
-     by_cases ↑i = ↑j, rw h, rw diagonal_apply_eq,
-     have ha := j.prop, 
-     change pn with (λ i, hAHA.eigenvalues i ≠ 0) at ha,
-     dsimp at ha,
-     exact (not_not.1 ha),
-     apply diagonal_apply_ne,
-     exact h, },
+    funext i j,
+    rw [dmatrix.zero_apply, to_blocks₂₂], 
+    dsimp,
+    by_cases ↑i = ↑j, rw h, rw diagonal_apply_eq,
+    have ha := j.prop, 
+    change pn with (λ i, hAHA.eigenvalues i ≠ 0) at ha,
+    dsimp at ha,
+    exact (not_not.1 ha),
+    apply diagonal_apply_ne,
+    exact h, },
 
   let eb : (fin n) ⊕ (fin 0) ≃ (fin n) , { exact equiv.sum_empty (fin n) (fin 0) },
   let V₁ := ((reindex eb.symm e.symm) V).to_blocks₁₁,
@@ -385,20 +395,26 @@ begin
   have U₁HU₂ : U₁ᴴ⬝U₂ = 0, 
   sorry { change U₁ with A⬝V₁⬝((Sσ⁻¹).map RηC),
     rw [matrix.mul_assoc, conj_transpose_mul, matrix.mul_assoc, AHU₂, matrix.mul_zero], },
-  
-  -- extract_goal,
-  -- have : (
-  --   from_blocks 
-  --     (reindex (equiv.refl (fin m)) ee.symm U₁) 
-  --     (U₂: matrix (fin m) {a // ¬pm a} ℂ) 
-  --     ![] ![]) ⬝
-  --   ((from_blocks Sσ S₁₂ S₂₁ S₂₂).map RηC) = from_blocks (A⬝V₁) (A⬝V₂) ![] ![], 
-  -- sorry { rw from_blocks_map, rw from_blocks_multiply,
-  --   rw [AV₂, hS₁₂, hS₂₁, hS₂₂],
-  --   simp_rw [matrix.zero_mul, (matrix.map_zero _ (map_zero RηC)), matrix.mul_zero, 
-  --     zero_add, add_zero, matrix.empty_mul],
-  --   congr,
-  --   exact U₁Sσ, },
+
+  have U₂HU₂: U₂ᴴ⬝U₂ = 1, 
+  sorry { change U₂ with ((reindex ebm.symm em.symm) U).to_blocks₁₂,
+    change U with hAAH.eigenvector_matrix,
+    
+    rw to_blocks₁₂,
+    simp only [reindex_apply, equiv.symm_symm, submatrix_apply, equiv.sum_empty_apply_inl, 
+      equiv.sum_compl_apply_inr],
+    funext x y,
+    rw mul_apply,
+    simp_rw [of_apply, conj_transpose_apply, of_apply, ← conj_transpose_apply, ←mul_apply,
+      eigenvector_matrix_conj_transpose_mul_self], 
+    by_cases hxy: x = y, { simp_rw [hxy, one_apply_eq],},
+    have : (x: fin m) ≠ y, { by_contra, rw subtype.coe_inj at h, exact hxy h, }, 
+    rw [one_apply_ne this, one_apply_ne (hxy)], },
+  have U₂HU₁: U₂ᴴ⬝U₁ = 0,
+    { rw [← conj_transpose_conj_transpose U₁, ← conj_transpose_mul, U₁HU₂, conj_transpose_zero], },
+  have : (from_blocks U₁ U₂ vec_empty vec_empty)ᴴ ⬝ (from_blocks U₁ U₂ vec_empty vec_empty) = 1, 
+  { rw [from_blocks_conj_transpose, from_blocks_multiply],
+    simp_rw [empty_mul_empty, add_zero, U₁inv, U₁HU₂, U₂HU₁, U₂HU₂, from_blocks_one], },
 
 end 
 
