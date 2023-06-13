@@ -230,22 +230,6 @@ begin
      exact equiv.bijective e.symm, },
 
   let Sσ := matrix.diagonal (λ i, (real.sqrt (S₁₁ i i))),
-  -- haveI Sσinv : invertible Sσ, 
-  -- sorry { apply invertible_of_right_inverse _  (matrix.diagonal (λ i, (1 / real.sqrt (S₁₁ i i)))),
-  --   rw [matrix.diagonal_mul_diagonal, ← diagonal_one, diagonal_eq_diagonal_iff],
-  --   intro i,
-  --   have diagnz : 0 < S₁₁ i i , 
-  --   { change S₁₁ with ((reindex e.symm e.symm) (diagonal hAHA.eigenvalues)).to_blocks₁₁,
-  --     rw to_blocks₁₁,
-  --     dsimp,
-  --     rw diagonal_apply_eq,
-  --     cases lt_or_eq_of_le (eigenvalues_nonneg_of_pos_semidef _ 
-  --       (conj_transpose_mul_self_is_pos_semidef A) i),
-  --     exact h,
-  --     exfalso,
-  --     exact i.prop (h.symm), },
-  --   rw mul_one_div_cancel,
-  --   apply real.sqrt_ne_zero'.2 diagnz, },
   have Sσ_inv : Sσ⁻¹ = (matrix.diagonal (λ i, (1 / real.sqrt (S₁₁ i i)))), 
   sorry { rw inv_eq_right_inv,
     rw [matrix.diagonal_mul_diagonal, ← diagonal_one, diagonal_eq_diagonal_iff],
@@ -397,7 +381,10 @@ begin
 
     apply matrix.left_mul_inj_of_invertible, },
 
-  have : Aᴴ⬝U₂ = 0, { rw ← ker_mat_mul_self_conj_transpose, rw AAHU₂,},
+  have AHU₂ : Aᴴ⬝U₂ = 0, sorry { rw ← ker_mat_mul_self_conj_transpose, rw AAHU₂,},
+  have U₁HU₂ : U₁ᴴ⬝U₂ = 0, 
+  sorry { change U₁ with A⬝V₁⬝((Sσ⁻¹).map RηC),
+    rw [matrix.mul_assoc, conj_transpose_mul, matrix.mul_assoc, AHU₂, matrix.mul_zero], },
   
   -- extract_goal,
   -- have : (
