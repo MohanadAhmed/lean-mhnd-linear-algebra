@@ -504,6 +504,9 @@ begin
     simp only [equiv.refl_symm, equiv.coe_refl, function.bijective_id],
   },
   apply_fun (λ x, x ⬝(((reindex eb (equiv.refl _)) (from_blocks V₁ V₂ vec_empty vec_empty))ᴴ)) at xFinal,
+  rw matrix.mul_assoc at xFinal,
+  rw fFinal at xFinal,
+  rw matrix.mul_one at xFinal,
   sorry,
 end 
 
