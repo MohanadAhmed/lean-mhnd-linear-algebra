@@ -507,6 +507,7 @@ begin
   rw matrix.mul_assoc at xFinal,
   rw fFinal at xFinal,
   rw matrix.mul_one at xFinal,
+  extract_goal,
   sorry,
 end 
 
