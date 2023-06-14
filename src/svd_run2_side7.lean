@@ -43,7 +43,16 @@ lemma submatrix_empty_blocks {m n R: Type*}[comm_ring R]
   simp_rw [submatrix_apply, from_blocks, of_apply, equiv.sum_empty_symm_apply, sum.elim_inl],
 end
 
-lemma subblocks_eq_one {m m₁ m₂ R: Type*}
+-- lemma subtype_inl {m R: Type*}
+--   [comm_ring R]
+--   [fintype m][decidable_eq m]
+--   {p: m → Prop}[decidable_pred p]
+--   (x: {a // p a}) :
+--   ((sum.inl x): {a // p a} ⊕ {a // ¬p a}) = (x: m)
+-- := begin
+
+-- end
+lemma subblocks_eq_one {m R: Type*}
   [comm_ring R][has_star R]
   [fintype m][decidable_eq m]
   {p: m → Prop}[decidable_pred p]
@@ -53,20 +62,37 @@ lemma subblocks_eq_one {m m₁ m₂ R: Type*}
 := begin
   let em := equiv.sum_compl p,
   let eb : m ⊕ fin 0 ≃ m := equiv.sum_empty m (fin 0),
+  
+  set V := ((reindex eb em)) (from_blocks V₁ V₂ vec_empty vec_empty),
+  have hV₁ : V₁ = ((reindex eb.symm em.symm) V).to_blocks₁₁, 
+  { change V with ((reindex eb em)) (from_blocks V₁ V₂ vec_empty vec_empty),
+    rw to_blocks₁₁,
+    simp only [reindex_apply, equiv.symm_symm, submatrix_submatrix, equiv.symm_comp_self,
+     submatrix_id_id, from_blocks_apply₁₁],
+    funext, 
+    rw of_apply, },
+  have hV₂ : V₂ = ((reindex eb.symm em.symm) V).to_blocks₁₂, 
+  { change V with ((reindex eb em)) (from_blocks V₁ V₂ vec_empty vec_empty),
+    rw to_blocks₁₂,
+    simp only [reindex_apply, equiv.symm_symm, submatrix_submatrix, equiv.symm_comp_self,
+     submatrix_id_id, from_blocks_apply₁₂],
+    funext, 
+    rw of_apply, },
 
-  have: (from_blocks V₁ V₂ vec_empty vec_empty)ᴴ⬝(from_blocks V₁ V₂ vec_empty vec_empty) = 1, 
-  { rw [from_blocks_conj_transpose, from_blocks_multiply, h₁₁, h₁₂, h₂₁, h₂₂],
-    simp only [empty_mul_empty, add_zero, from_blocks_one], },
-  
-  set V := from_blocks V₁ V₂ vec_empty vec_empty,
-  have hV₁ : V₁ = V.to_blocks₁₁, simp only [to_blocks_from_blocks₁₁],
-  have hV₂ : V₂ = V.to_blocks₁₂, simp only [to_blocks_from_blocks₁₂],
+  have VHVeq1 : Vᴴ⬝V = 1, 
+  { change V with ((reindex eb em)) (from_blocks V₁ V₂ vec_empty vec_empty),
+    simp_rw [reindex_apply, conj_transpose_submatrix, submatrix_mul_equiv],
+    rw [from_blocks_conj_transpose, from_blocks_multiply, h₁₁, h₁₂, h₂₁, h₂₂],
+    simp only [empty_mul_empty, add_zero, from_blocks_one, submatrix_one_equiv], },
+  rw mul_eq_one_comm at VHVeq1,
+
+  simp_rw [hV₁, hV₂, to_blocks₁₁, to_blocks₁₂],
   funext x y,
-  simp_rw [dmatrix.add_apply, mul_apply, conj_transpose_apply, hV₁, hV₂, to_blocks₁₁, to_blocks₁₂,
-   of_apply],
-  
-  
-  -- simp_rw ← sum.elim_inl p _,
+  simp only [reindex_apply, equiv.symm_symm, submatrix_apply, equiv.sum_empty_apply_inl, equiv.sum_compl_apply_inl,
+  equiv.sum_compl_apply_inr, dmatrix.add_apply],
+  simp_rw [mul_apply, of_apply, conj_transpose_apply, of_apply],
+  simp_rw fintype.sum_subtype_add_sum_subtype p (λ x_1, V x x_1 * star (V y x_1)),
+  simp_rw [←conj_transpose_apply, ← mul_apply, VHVeq1 ],
 end
 
 /-
