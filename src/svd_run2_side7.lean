@@ -43,21 +43,12 @@ lemma submatrix_empty_blocks {m n R: Type*}[comm_ring R]
   simp_rw [submatrix_apply, from_blocks, of_apply, equiv.sum_empty_symm_apply, sum.elim_inl],
 end
 
--- lemma subtype_inl {m R: Type*}
---   [comm_ring R]
---   [fintype m][decidable_eq m]
---   {p: m → Prop}[decidable_pred p]
---   (x: {a // p a}) :
---   ((sum.inl x): {a // p a} ⊕ {a // ¬p a}) = (x: m)
--- := begin
-
--- end
 lemma subblocks_eq_one {m R: Type*}
   [comm_ring R][has_star R]
   [fintype m][decidable_eq m]
   {p: m → Prop}[decidable_pred p]
   (V₁: matrix m {a // p a} R)(V₂: matrix m {a // ¬ p a} R) 
-  {h₁₁: V₁ᴴ⬝V₁ = 1}{h₁₂: V₁ᴴ⬝V₂ = 0}{h₂₁: V₂ᴴ⬝V₁ = 0}{h₂₂: V₂ᴴ⬝V₂ = 1}:
+  (h₁₁: V₁ᴴ⬝V₁ = 1)(h₁₂: V₁ᴴ⬝V₂ = 0)(h₂₁: V₂ᴴ⬝V₁ = 0)(h₂₂: V₂ᴴ⬝V₂ = 1):
   V₁⬝V₁ᴴ + V₂⬝V₂ᴴ = 1 
 := begin
   let em := equiv.sum_compl p,
@@ -95,7 +86,28 @@ lemma subblocks_eq_one {m R: Type*}
   simp_rw [←conj_transpose_apply, ← mul_apply, VHVeq1 ],
 end
 
-/-
+lemma subblocks_eq_one_with_equiv
+  {m n R: Type*}
+  [comm_ring R][has_star R]
+  [fintype m][decidable_eq m][fintype n][decidable_eq n]
+  {pm: m → Prop}[decidable_pred pm]
+  {pn: n → Prop}[decidable_pred pn]
+  (V₁: matrix m {a // pn a} R)(V₂: matrix m {a // ¬ pm a} R) 
+  (e:  {a // pm a} ≃ {a // pn a})
+  (h₁₁: V₁ᴴ⬝V₁ = 1)(h₁₂: V₁ᴴ⬝V₂ = 0)(h₂₁: V₂ᴴ⬝V₁ = 0)(h₂₂: V₂ᴴ⬝V₂ = 1):
+  V₁⬝V₁ᴴ + V₂⬝V₂ᴴ = 1 :=
+begin
+  rw [← submatrix_id_id (V₁⬝V₁ᴴ), ← submatrix_mul_equiv V₁ V₁ᴴ _ e _, ← conj_transpose_submatrix],
+  apply subblocks_eq_one _ _ _ _ _ h₂₂,
+  rw [conj_transpose_submatrix, ← submatrix_mul, h₁₁, submatrix_one_equiv],
+  exact function.bijective_id,
+  rw [conj_transpose_submatrix, ← submatrix_id_id (V₂),← submatrix_mul, h₁₂, submatrix_zero, 
+    dmatrix.zero_apply],
+  exact function.bijective_id,
+  rw [← submatrix_id_id (V₂ᴴ), ← submatrix_mul, h₂₁, submatrix_zero, dmatrix.zero_apply],
+  exact function.bijective_id,
+end
+
 example {m n r: ℕ}
   (A : matrix (fin m) (fin n) ℂ) :
   let hAHA : (Aᴴ ⬝ A).is_hermitian := (is_hermitian_transpose_mul_self A),
@@ -181,7 +193,8 @@ begin
   spectralAHA Sblock hS₁₂ hS₂₁ hS₂₂ Vblock reducedSpectral Sσ_inv Sσ_is_unit_det S₁₁diag threeSs Vinv Vbh 
   S₁₁diag_1 V₁inv U₁inv U₁Sσ AV₂ AAHU₂ AHU₂ U₁HU₂ U₂HU₂ U₂HU₁ Vbinv fFinal xFinal,
   have A_rank_r: A.rank = r, sorry,
-  -- have card_pn_r: fintype.card {a // pn a} = r,sorry,
+  have card_pn_r: fintype.card {a // pn a} = r,sorry,
+  have card_pm_r: fintype.card {a // pm a} = r,sorry,
   -- have card_not_pm_m_sub_r: fintype.card {a // ¬pm a} = (m - r), sorry,
   -- have card_not_pn_n_sub_r: fintype.card {a // ¬pn a} = (n - r), sorry,
   -- have e_pn_r: {a // pn a} ≃ (fin r), {apply fintype.equiv_fin_of_card_eq card_pn_r,},
@@ -195,6 +208,9 @@ begin
   have ezm : {a // pn a} ⊕ {a // ¬pm a} ≃ (fin r) ⊕ (fin (m - r)), sorry {
     exact equiv_trans_across_sums e_pn_r e_not_pm_r,
   },
+  have e_pn_pm : {a // pm a} ≃ {a // pn a}, 
+  { apply fintype.equiv_of_card_eq,
+    rw [card_pn_r, card_pm_r], },
 
   apply_fun (λ x, x.submatrix id id) at xFinal,
   -- simp only [submatrix_id_id, reindex_apply, equiv.refl_symm, equiv.coe_refl, conj_transpose_submatrix] at xFinal,
@@ -216,6 +232,9 @@ begin
     empty_mul_empty, mul_empty, empty_mul, of_add_of, pi.const_add, empty_add_empty,
      add_zero, Vbh.1, Vbh.2.1, Vbh.2.2, submatrix_empty_blocks,
     U₁inv, U₁HU₂, U₂HU₁, U₂HU₂, from_blocks_one, submatrix_one_equiv],
+  rw subblocks_eq_one V₁ V₂ Vbh.1 Vbh.2.1 Vbh.2.2.1 Vbh.2.2.2,
+  rw subblocks_eq_one_with_equiv U₁ U₂ e_pn_pm U₁inv U₁HU₂ U₂HU₁ U₂HU₂,
+  simp_rw [eq_self_iff_true, and_true],
   -- simp only [mul_empty, of_add_of, pi.const_add, empty_add_empty],
 end
--/
+
