@@ -17,9 +17,6 @@ variables {a b c d: Type*}
 variables [fintype a][fintype b][fintype c][fintype d]
 variables [decidable_eq a][decidable_eq b][decidable_eq c][decidable_eq d]
 variables (e1: a ≃ c)(e2: b ≃ d)
-#check λ x, sum.inl (e1 x)
-#check λ x, sum.inr (e2 x)
-#check sum.elim (λ x, sum.inl (e1 x)) (λ x, sum.inr (e2 x))
 
 def equiv_trans_across_sums
   {a b c d: Type*}
@@ -35,6 +32,44 @@ def equiv_trans_across_sums
       simp only [sum.elim_inl, equiv.apply_symm_apply],
       simp only [sum.elim_inr, equiv.apply_symm_apply], }, }
 
+lemma submatrix_empty_blocks {m n R: Type*}[comm_ring R]
+  [fintype m][fintype n]
+  [decidable_eq m][decidable_eq n]
+  (A: matrix m n R) :
+  (from_blocks (A) (of (function.const (m) vec_empty)) (of vec_empty) (of (function.const (fin 0) vec_empty))
+   ).submatrix (equiv.sum_empty m (fin 0)).symm (equiv.sum_empty n (fin 0)).symm = A
+:= begin
+  funext x y, 
+  simp_rw [submatrix_apply, from_blocks, of_apply, equiv.sum_empty_symm_apply, sum.elim_inl],
+end
+
+lemma subblocks_eq_one {m m₁ m₂ R: Type*}
+  [comm_ring R][has_star R]
+  [fintype m][decidable_eq m]
+  {p: m → Prop}[decidable_pred p]
+  (V₁: matrix m {a // p a} R)(V₂: matrix m {a // ¬ p a} R) 
+  {h₁₁: V₁ᴴ⬝V₁ = 1}{h₁₂: V₁ᴴ⬝V₂ = 0}{h₂₁: V₂ᴴ⬝V₁ = 0}{h₂₂: V₂ᴴ⬝V₂ = 1}:
+  V₁⬝V₁ᴴ + V₂⬝V₂ᴴ = 1 
+:= begin
+  let em := equiv.sum_compl p,
+  let eb : m ⊕ fin 0 ≃ m := equiv.sum_empty m (fin 0),
+
+  have: (from_blocks V₁ V₂ vec_empty vec_empty)ᴴ⬝(from_blocks V₁ V₂ vec_empty vec_empty) = 1, 
+  { rw [from_blocks_conj_transpose, from_blocks_multiply, h₁₁, h₁₂, h₂₁, h₂₂],
+    simp only [empty_mul_empty, add_zero, from_blocks_one], },
+  
+  set V := from_blocks V₁ V₂ vec_empty vec_empty,
+  have hV₁ : V₁ = V.to_blocks₁₁, simp only [to_blocks_from_blocks₁₁],
+  have hV₂ : V₂ = V.to_blocks₁₂, simp only [to_blocks_from_blocks₁₂],
+  funext x y,
+  simp_rw [dmatrix.add_apply, mul_apply, conj_transpose_apply, hV₁, hV₂, to_blocks₁₁, to_blocks₁₂,
+   of_apply],
+  
+  
+  -- simp_rw ← sum.elim_inl p _,
+end
+
+/-
 example {m n r: ℕ}
   (A : matrix (fin m) (fin n) ℂ) :
   let hAHA : (Aᴴ ⬝ A).is_hermitian := (is_hermitian_transpose_mul_self A),
@@ -106,48 +141,55 @@ example {m n r: ℕ}
            (from_blocks Sσ 0 0 0).map RηC ⬝
          ((reindex eb (equiv.refl ({a // pn a} ⊕ {a // ¬pn a})))
               (from_blocks V₁ V₂ vec_empty vec_empty))ᴴ →
-     (∃ (U : matrix (fin m) (fin m) ℂ) (Q : matrix (fin m) (fin n) ℝ)
-        (V : matrix (fin n) (fin n) ℂ),
+     (∃ (U : matrix (fin m) ((fin r) ⊕ (fin (m - r))) ℂ) 
+        (Q : matrix ((fin r) ⊕ (fin (m - r))) ((fin r) ⊕ (fin (n - r))) ℝ)
+        (V : matrix (fin n) ((fin r) ⊕ (fin (n - r))) ℂ),
         A = U ⬝ Q.map RηC ⬝ Vᴴ ∧
           V ⬝ Vᴴ = 1 ∧
             U ⬝ Uᴴ = 1 ∧
               Uᴴ ⬝ U = 1 ∧
-                Vᴴ ⬝ V = 1 ∧
-                  ∀ (i : fin m) (j : fin n), (i:ℕ) ≠ (j:ℕ) → Q i j = 0) :=
+                Vᴴ ⬝ V = 1) := 
+                  -- ∀ (i : fin m) (j : fin n), (i:ℕ) ≠ (j:ℕ) → Q i j = 0) :=
 begin
   intros hAHA V S pn e Se S₁₁ S₁₂ S₂₁ S₂₂ eb V₁ V₂ Sσ U₁ hAAH U pm em ebm U₂ SRηC 
   spectralAHA Sblock hS₁₂ hS₂₁ hS₂₂ Vblock reducedSpectral Sσ_inv Sσ_is_unit_det S₁₁diag threeSs Vinv Vbh 
   S₁₁diag_1 V₁inv U₁inv U₁Sσ AV₂ AAHU₂ AHU₂ U₁HU₂ U₂HU₂ U₂HU₁ Vbinv fFinal xFinal,
   have A_rank_r: A.rank = r, sorry,
-  have card_pn_r: fintype.card {a // pn a} = r,sorry,
-  have card_not_pm_m_sub_r: fintype.card {a // ¬pm a} = (m - r), sorry,
-  have card_not_pn_n_sub_r: fintype.card {a // ¬pn a} = (n - r), sorry,
-  have e_pn_r: {a // pn a} ≃ (fin r), {apply fintype.equiv_fin_of_card_eq card_pn_r,},
-  have e_not_pm_r: {a // ¬pm a} ≃ (fin (m - r)), 
-  { apply fintype.equiv_fin_of_card_eq card_not_pm_m_sub_r, },
-  have e_not_pn_r: {a // ¬pn a} ≃ (fin (n - r)), 
-  { apply fintype.equiv_fin_of_card_eq card_not_pn_n_sub_r, },
-  -- apply_fun (λ x, x.submatrix id id) at xFinal,
-  -- simp only [submatrix_id_id, reindex_apply, equiv.refl_symm, equiv.coe_refl, conj_transpose_submatrix] at xFinal,
-  -- rw submatrix_id_id at xFinal,
-  have ezn : {a // pn a} ⊕ {a // ¬pn a} ≃ (fin r) ⊕ (fin (n - r)), {
-    refine equiv.trans e _,
-    apply fintype.equiv_of_card_eq,
-    simp only [fintype.card_fin, fintype.card_sum],
-    rw ← nat.add_sub_assoc,
-    rw nat.add_sub_cancel_left,
-    rw ← A_rank_r,
-    apply rank_le_width,
+  -- have card_pn_r: fintype.card {a // pn a} = r,sorry,
+  -- have card_not_pm_m_sub_r: fintype.card {a // ¬pm a} = (m - r), sorry,
+  -- have card_not_pn_n_sub_r: fintype.card {a // ¬pn a} = (n - r), sorry,
+  -- have e_pn_r: {a // pn a} ≃ (fin r), {apply fintype.equiv_fin_of_card_eq card_pn_r,},
+  -- have e_not_pm_r: {a // ¬pm a} ≃ (fin (m - r)), 
+  -- { apply fintype.equiv_fin_of_card_eq card_not_pm_m_sub_r, },
+  -- have e_not_pn_r: {a // ¬pn a} ≃ (fin (n - r)), 
+  -- { apply fintype.equiv_fin_of_card_eq card_not_pn_n_sub_r, },
+  have ezn : {a // pn a} ⊕ {a // ¬pn a} ≃ (fin r) ⊕ (fin (n - r)), sorry {
+    apply equiv_trans_across_sums e_pn_r e_not_pn_r,
   },
-   have ezm : {a // pn a} ⊕ {a // ¬pm a} ≃ (fin r) ⊕ (fin (m - r)), {
-    symmetry,
-    apply fintype.equiv_of_card_eq,
-    simp only [fintype.card_fin, fintype.card_sum],
-    rw card_not_pm_m_sub_r,
-    rw card_pn_r, },
-  -- rw ← submatrix_mul_equiv _ _ _  at xFinal, 
+  have ezm : {a // pn a} ⊕ {a // ¬pm a} ≃ (fin r) ⊕ (fin (m - r)), sorry {
+    exact equiv_trans_across_sums e_pn_r e_not_pm_r,
+  },
 
-  -- use (reindex ebm (equiv.refl ({a // pn a} ⊕ {a // ¬pm a})))
-  --            (from_blocks U₁ U₂ vec_empty vec_empty)
+  apply_fun (λ x, x.submatrix id id) at xFinal,
+  -- simp only [submatrix_id_id, reindex_apply, equiv.refl_symm, equiv.coe_refl, conj_transpose_submatrix] at xFinal,
+  rw submatrix_id_id at xFinal,
+  simp only [reindex_apply, equiv.refl_symm, equiv.coe_refl, conj_transpose_submatrix] at xFinal,
+  rw ← submatrix_mul_equiv _ _ _ ezn.symm _ at xFinal,
+  rw ← submatrix_mul_equiv _ _ _ ezm.symm _ at xFinal,
+  simp only [submatrix_submatrix, function.comp.right_id, function.comp.left_id] at xFinal,
+  
+  use (from_blocks U₁ U₂ vec_empty vec_empty).submatrix (ebm.symm) (ezm.symm),
+  use ((from_blocks Sσ 0 0 0)).submatrix (ezm.symm) (ezn.symm),
+  use (from_blocks V₁ V₂ vec_empty vec_empty).submatrix (eb.symm) (ezn.symm),
+  rw ← submatrix_map (RηC), --rw from_blocks_map,
+  -- simp_rw matrix.map_zero RηC (map_zero _),
+  simp_rw conj_transpose_submatrix,
+  split,
+  exact xFinal,
+  simp_rw [from_blocks_conj_transpose, submatrix_mul_equiv, from_blocks_multiply,
+    empty_mul_empty, mul_empty, empty_mul, of_add_of, pi.const_add, empty_add_empty,
+     add_zero, Vbh.1, Vbh.2.1, Vbh.2.2, submatrix_empty_blocks,
+    U₁inv, U₁HU₂, U₂HU₁, U₂HU₂, from_blocks_one, submatrix_one_equiv],
+  -- simp only [mul_empty, of_add_of, pi.const_add, empty_add_empty],
 end
-
+-/
