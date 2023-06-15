@@ -1,22 +1,23 @@
-# Formalization of Singular Value Decomposition in Lean
+---
+title: Formalization of Singular Value Decomposition (SVD) in LEAN3
+author: Mohanad Ahmed
+date: Jun 2023
+geometry: margin=2cm
+---
 
 Let $m,n,r$ be three natural numbers. Let $A \in \mathbb{C}^{m\times n}$ be an $m\times n$ comlpex matrix. There exist three matrices $U \in \mathbb{C}^{m \times m},S \in \mathbb{R}^{m \times n},V \in \mathbb{C}^{n \times n}$ such that $$A=USV^H$$
 with $$ U^HU = I_m\quad UU^H=I_m\quad V^HV=I_n\quad VV^H=I_n$$
 Given that $r = \text{rank}(A)$, the matrices $U,S,V$ can be partitioned as follows:
-$$
-A = 
+$$A = 
 \begin{bmatrix}U_1 & U_2\end{bmatrix}
 \begin{bmatrix}S_{11} & 0 \\ 0 & 0 \end{bmatrix}
-\begin{bmatrix}V_1 & V_2\end{bmatrix}^H
-$$
+\begin{bmatrix}V_1 & V_2\end{bmatrix}^H$$
 such that
 $$\begin{aligned}
 U_1  &\in \mathbb{C}^{m \times r}  & U_2 &\in \mathbb{C}^{m \times (m-r)}\\ 
 S_{11} &\in\mathbb{R}^{r\times r} \\
 V_1  &\in \mathbb{C}^{n \times r}  & V_2 &\in \mathbb{C}^{n \times (n-r)}
-\end{aligned}
-
-$$
+\end{aligned}$$
 
 <!-- with $U_1 \in \mathbb{C}^{m \times r}, U_2 \in \mathbb{C}^{m \times (m-r)}, S_{11}\in\mathbb{R}^{r\times r}, V_1 \in \mathbb{C}^{n \times r}, V_2 \in \mathbb{C}^{n \times (n-r)}$ -->
 
