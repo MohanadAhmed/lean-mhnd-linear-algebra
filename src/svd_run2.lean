@@ -306,8 +306,8 @@ lemma svd_decompose{m n r: ℕ} (A: matrix (fin m) (fin n) ℂ) (hrank: r = A.ra
   V⬝Vᴴ = 1 ∧
   U⬝Uᴴ = 1 ∧
   Uᴴ⬝U = 1 ∧ 
-  Vᴴ⬝V = 1
-  -- ∀(i: fin m) (j : fin n),((i:ℕ) ≠ (j:ℕ)) → Q i j = 0
+  Vᴴ⬝V = 1 ∧
+  Q.to_blocks₁₂ = 0 ∧ Q.to_blocks₂₁ = 0 ∧ Q.to_blocks₂₂ = 0
   := 
 begin
   let hAHA := is_hermitian_transpose_mul_self A,
@@ -737,8 +737,8 @@ begin
       U₁inv, U₁HU₂, U₂HU₁, U₂HU₂, from_blocks_one, submatrix_one_equiv],
     rw subblocks_eq_one V₁ V₂ Vbh.1 Vbh.2.1 Vbh.2.2.1 Vbh.2.2.2,
     rw subblocks_eq_one_with_equiv U₁ U₂ e_pn_pm U₁inv U₁HU₂ U₂HU₁ U₂HU₂,
-    simp_rw [eq_self_iff_true, and_true], },
-
+    simp_rw [eq_self_iff_true, true_and],extract_goal, },
+  
 end 
 
 -- -/
