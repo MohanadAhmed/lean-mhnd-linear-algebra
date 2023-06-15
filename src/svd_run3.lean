@@ -45,35 +45,46 @@ begin
   sorry,
 end
 
-noncomputable def ezn1 (hr: r = A.rank) :  
+noncomputable def ezn (hr: r = A.rank) :  
   {a // (is_hermitian_transpose_mul_self A).eigenvalues a ≠ 0} ⊕ 
-  {a // ¬(is_hermitian_transpose_mul_self A).eigenvalues a ≠ 0} ≃ 
-  (fin r) ⊕ (fin (n - r)) := begin
+  {a // ¬(is_hermitian_transpose_mul_self A).eigenvalues a ≠ 0} ≃ (fin r) ⊕ (fin (n - r)) 
+:= begin
   have e_pn_r : {a // (is_hermitian_transpose_mul_self A).eigenvalues a ≠ 0} ≃ (fin r), 
   { apply fintype.equiv_fin_of_card_eq,
     symmetry,
     rw [hr, rank_eq_card_pos_eigs_conj_transpose_mul_self], },
-  have e_npn_r : {a // ¬((is_hermitian_transpose_mul_self A).eigenvalues a ≠ 0)} ≃ (fin (n - r)), 
+  have e_npn_r : 
+    {a // ¬((is_hermitian_transpose_mul_self A).eigenvalues a ≠ 0)} ≃ (fin (n - r)),
   { apply fintype.equiv_of_card_eq,
     rw fintype.card_subtype_compl,
     rw [fintype.card_fin, fintype.card_fin, ← rank_eq_card_pos_eigs_conj_transpose_mul_self, hr], },
   exact equiv_trans_across_sums e_pn_r e_npn_r,
 end
 
--- noncomputable def ezn (hr: r = A.rank) :  
---   {a // (pn A) a} ⊕ {a // ¬(pn A) a} ≃ 
---   (fin r) ⊕ (fin (n - r)) := begin
---   have e_pn_r : {a // (pn A) a} ≃ (fin r), sorry,
---   have e_npn_r : {a // ¬(pn A) a} ≃ (fin (n - r)), sorry,
---   apply equiv_trans_across_sums e_pn_r e_npn_r,
--- end
+noncomputable def ezm (hr: r = A.rank) :  
+  {a // (is_hermitian_mul_conj_transpose_self A).eigenvalues a ≠ 0} ⊕ 
+  {a // ¬(is_hermitian_mul_conj_transpose_self A).eigenvalues a ≠ 0} ≃ (fin r) ⊕ (fin (m - r)) 
+:= begin
+  have e_pm_r : {a // (is_hermitian_mul_conj_transpose_self A).eigenvalues a ≠ 0} ≃ (fin r), 
+  { apply fintype.equiv_fin_of_card_eq,
+    symmetry,
+    rw [hr, rank_eq_card_pos_eigs_self_mul_conj_transpose], },
+  have e_npm_r : 
+    {a // ¬((is_hermitian_mul_conj_transpose_self A).eigenvalues a ≠ 0)} ≃ (fin (m - r)),
+  { apply fintype.equiv_of_card_eq,
+    rw fintype.card_subtype_compl,
+    rw [fintype.card_fin, fintype.card_fin, ← rank_eq_card_pos_eigs_self_mul_conj_transpose, hr], },
+  exact equiv_trans_across_sums e_pm_r e_npm_r,
+end
 
--- def svdV₁ (A: matrix (fin m) (fin n) ℂ): matrix (fin m) (fin r) ℂ := begin
---   let hAHA := is_hermitian_transpose_mul_self A,
---   let V := (hAHA).eigenvector_matrix,
---   let pn := λ i, hAHA.eigenvalues i ≠ 0, 
---   let en := equiv.sum_compl pn,
---   let ebn := equiv.sum_empty (fin n) (fin 0),
---   exact ((reindex ebn.symm en.symm V).to_blocks₁₁).submatrix id (ezn A),
--- end
+noncomputable def svdV₁ (hr: r = A.rank): matrix (fin n) (fin r) ℂ := begin
+  let hAHA := is_hermitian_transpose_mul_self A,
+  let V := (hAHA).eigenvector_matrix,
+  let epn := equiv.sum_compl (λ i, hAHA.eigenvalues i ≠ 0),
+  let ebn := equiv.sum_empty (fin n) (fin 0),
+  let enx : {a // hAHA.eigenvalues a ≠ 0} ≃ (fin r), 
+  { apply fintype.equiv_fin_of_card_eq,
+    rw [hr, rank_eq_card_pos_eigs_conj_transpose_mul_self], },
+  exact ((reindex (equiv.refl _) enx) ((reindex ebn.symm epn.symm V).to_blocks₁₁)),
+end
 -- def svdV₂: matrix (fin m) (fin r) ℂ := sorry
