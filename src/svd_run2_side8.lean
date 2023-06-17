@@ -13,7 +13,36 @@ open_locale matrix big_operators complex_conjugate
 
 def RηC := algebra_map ℝ ℂ
 
+def equiv_trans_across_sums
+  {a b c d: Type*}
+  [fintype a][fintype b][fintype c][fintype d]
+  [decidable_eq a][decidable_eq b][decidable_eq c][decidable_eq d]
+  (e1: a ≃ c)(e2: b ≃ d): (a ⊕ b) ≃ (c ⊕ d) :=
+  { to_fun := sum.elim (λ x, sum.inl (e1 x)) (λ x, sum.inr (e2 x)),
+    inv_fun := sum.elim (λ x, sum.inl (e1.symm x)) (λ x, sum.inr (e2.symm x)),
+    left_inv := by {intro x, cases x, 
+      simp only [sum.elim_inl, equiv.symm_apply_apply],
+      simp only [sum.elim_inr, equiv.symm_apply_apply], },
+    right_inv := by { intro x, cases x,
+      simp only [sum.elim_inl, equiv.apply_symm_apply],
+      simp only [sum.elim_inr, equiv.apply_symm_apply], }, }
 
+-- lemma x1
+--   {a b c d: Type*}
+--   [fintype a][fintype b][fintype c][fintype d]
+--   [decidable_eq a][decidable_eq b][decidable_eq c][decidable_eq d]
+--   (e1: a ≃ c)(e2: b ≃ d)(z: a):
+--     (equiv_trans_across_sums e1 e2) (sum.inl z)
+
+/-
+sum.elim 
+  (λ (i : {a // pn a}), sum.elim (Sσ i) 0) 
+  (λ (i : {a // ¬pm a}), sum.elim 0 0) 
+    ((⇑(ezm.symm) ∘ sum.inl) i)
+    ((⇑(ezn.symm) ∘ sum.inr) j) = 0
+-/
+
+--/--
 example {m n r : ℕ}
   (A : matrix (fin m) (fin n) ℂ)
   (hrank : r = A.rank) :
@@ -126,9 +155,20 @@ begin
     simp_rw [to_blocks₁₂, to_blocks₂₁, to_blocks₂₂, ← matrix.ext_iff, submatrix_apply, 
       of_apply, dmatrix.zero_apply, from_blocks, of_apply, pi.zero_apply, 
       sum.elim_zero_zero],
-      split,
-      intros i j,
-      dsimp,
+    -- split,
+    -- intros i j,
+    have x1: ezm = equiv_trans_across_sums e_pn_r e_not_pm_r, sorry,
+    have x2: ezn = equiv_trans_across_sums e_pn_r e_not_pn_r, sorry,
+    simp_rw [x1, x2, equiv_trans_across_sums, equiv.coe_fn_symm_mk,
+       sum.elim_inl, sum.elim_inr, pi.zero_apply, eq_self_iff_true, 
+       forall_2_true_iff, and_true],
+    -- simp_rw equiv.coe_fn_symm_mk,
+    -- simp only [equiv.coe_fn_symm_mk, sum.elim_inl, sum.elim_inr, pi.zero_apply],
+    -- simp only [equiv.coe_fn_symm_mk, sum.elim_inl, sum.elim_inr, pi.zero_apply, eq_self_iff_true],
+    
+
+      -- simp_rw ← equiv.eq_comp_symm ezn _ _,
+      
       -- rw equiv.set.sum_compl_symm_apply,
 end
-
+---/

@@ -300,25 +300,26 @@ end
 lemma svd_decompose{m n r: ℕ} (A: matrix (fin m) (fin n) ℂ) (hrank: r = A.rank): 
 ∃ 
   (U: matrix (fin m) (fin r ⊕ fin (m - r)) ℂ)
+  -- (σVals : fin r → ℝ)
   (Q: matrix (fin r ⊕ fin (m - r)) (fin r ⊕ fin (n - r)) ℝ)
   (V: matrix (fin n) (fin r ⊕ fin (n - r)) ℂ), 
-  A = U⬝(Q.map RηC)⬝Vᴴ ∧ 
-  V⬝Vᴴ = 1 ∧
-  U⬝Uᴴ = 1 ∧
-  Uᴴ⬝U = 1 ∧ 
-  Vᴴ⬝V = 1 ∧
-  Q.to_blocks₁₂ = 0 ∧ Q.to_blocks₂₁ = 0 ∧ Q.to_blocks₂₂ = 0
-  := 
+  -- let Q: matrix (fin r ⊕ fin (m - r)) (fin r ⊕ fin (n - r)) ℝ 
+    -- := from_blocks (diagonal σVals) 0 0 0 in
+    A = U⬝(Q.map RηC)⬝Vᴴ ∧ 
+    V⬝Vᴴ = 1 ∧
+    U⬝Uᴴ = 1 ∧
+    Uᴴ⬝U = 1 ∧ 
+    Vᴴ⬝V = 1 ∧ Q.to_blocks₁₂ = 0 ∧ Q.to_blocks₂₁ = 0 ∧  Q.to_blocks₂₂ = 0 := 
 begin
   let hAHA := is_hermitian_transpose_mul_self A,
   let V := hAHA.eigenvector_matrix,
   let S := diagonal hAHA.eigenvalues,
   have SRηC : S.map RηC = diagonal (coe ∘ hAHA.eigenvalues),
-  -- sorry 
+  sorry 
   { change S with diagonal hAHA.eigenvalues,
    rw [matrix.diagonal_map (map_zero _), RηC, complex.coe_algebra_map],},
   have spectralAHA : (Aᴴ⬝A) = V⬝ S.map RηC ⬝ Vᴴ, 
-  -- sorry 
+  sorry 
   { change V with hAHA.eigenvector_matrix,
     rw [SRηC, matrix.mul_assoc, matrix.is_hermitian.conj_transpose_eigenvector_matrix],
     apply modified_spectral_theorem hAHA, },
@@ -331,17 +332,32 @@ begin
   let S₁₂ := Se.to_blocks₁₂,
   let S₂₁ := Se.to_blocks₂₁,
   let S₂₂ := Se.to_blocks₂₂,
-
+  
   have Sblock : S = reindex e e (from_blocks S₁₁ S₁₂ S₂₁ S₂₂), 
-  -- sorry 
+  sorry 
   { apply_fun reindex e.symm e.symm,
     simp only [reindex_apply, equiv.symm_symm, submatrix_submatrix, 
         equiv.symm_comp_self, submatrix_id_id],
     funext i j,
     cases i; { cases j; refl,},  },
+  
+  have hS₁₁: S₁₁ = diagonal (λ i: {a // pn a}, hAHA.eigenvalues i),
+  sorry
+  { change S₁₁ with Se.to_blocks₁₁,
+    change Se with reindex e.symm e.symm (S),
+    change e with equiv.sum_compl pn,
+    change S with diagonal hAHA.eigenvalues,
+    
+    rw to_blocks₁₁,
+    simp only [reindex_apply, equiv.symm_symm, submatrix_diagonal_equiv],
+    funext x y,
+    by_cases h: x =y,
+    simp_rw [h, of_apply, diagonal_apply_eq, function.comp_apply, equiv.sum_compl_apply_inl],
+    rwa [of_apply, diagonal_apply_ne, diagonal_apply_ne], 
+    rwa [ne.def, sum.inl.inj_iff], },
 
   have hS₁₂ : S₁₂ = 0, 
-  -- sorry 
+  sorry 
   { change S₁₂ with (reindex e.symm e.symm (diagonal hAHA.eigenvalues)).to_blocks₁₂,
     funext i j,
     rw [dmatrix.zero_apply, to_blocks₁₂], 
@@ -350,7 +366,7 @@ begin
     apply compl_subtypes_ne, },
 
   have hS₂₁ : S₂₁ = 0, 
-  -- sorry 
+  sorry 
   { change S₂₁ with (reindex e.symm e.symm (diagonal hAHA.eigenvalues)).to_blocks₂₁,
     funext i j,
     rw [dmatrix.zero_apply, to_blocks₂₁], 
@@ -358,7 +374,7 @@ begin
     rw diagonal_apply_ne',
     apply compl_subtypes_ne, },
   have hS₂₂ : S₂₂ = 0, 
-  -- sorry 
+  sorry 
   { change S₂₂ with (reindex e.symm e.symm (diagonal hAHA.eigenvalues)).to_blocks₂₂,
     funext i j,
     rw [dmatrix.zero_apply, to_blocks₂₂], 
@@ -375,7 +391,7 @@ begin
   let V₁ := ((reindex eb.symm e.symm) V).to_blocks₁₁,
   let V₂ := ((reindex eb.symm e.symm) V).to_blocks₁₂,
   have Vblock : V = (reindex eb e (from_blocks V₁ V₂ ![] ![])), 
-  -- sorry 
+  sorry 
   {  apply_fun (reindex eb.symm e.symm),
      simp only [reindex_apply, equiv.symm_symm, submatrix_submatrix, 
           equiv.symm_comp_self, submatrix_id_id],
@@ -385,7 +401,7 @@ begin
      cases j;
      fin_cases i, },
   have reducedSpectral : Aᴴ⬝A = V₁⬝(S₁₁.map RηC)⬝(V₁ᴴ), 
-  -- sorry 
+  sorry 
   {  simp_rw [(spectralAHA), Vblock, Sblock, reindex_apply, ← submatrix_map],
      rw [conj_transpose_submatrix,  from_blocks_conj_transpose],
      rw [hS₁₂, hS₂₁, hS₂₂],
@@ -411,66 +427,55 @@ begin
      exact equiv.bijective e.symm,
      exact equiv.bijective e.symm, },
 
-  let Sσ := matrix.diagonal (λ i, (real.sqrt (S₁₁ i i))),
-  have Sσ_inv : Sσ⁻¹ = (matrix.diagonal (λ i, (1 / real.sqrt (S₁₁ i i)))), 
-  -- sorry 
+  have diagnz : ∀(i: {a // pn a}), 0 < hAHA.eigenvalues i,
+  sorry 
+  { intro i,
+    refine lt_of_le_of_ne _ (i.prop.symm),
+    exact eigenvalues_nonneg_of_pos_semidef _ (conj_transpose_mul_self_is_pos_semidef A) _, },
+
+  let Sσ := diagonal (λ i: {a // pn a}, real.sqrt (hAHA.eigenvalues i)),
+  have Sσ_inv : Sσ⁻¹ = (matrix.diagonal (λ i, (1 / real.sqrt (hAHA.eigenvalues i)))), 
+  sorry 
   { rw inv_eq_right_inv,
     rw [matrix.diagonal_mul_diagonal, ← diagonal_one, diagonal_eq_diagonal_iff],
     intro i,
-    have diagnz : 0 < S₁₁ i i , 
-    { change S₁₁ with ((reindex e.symm e.symm) (diagonal hAHA.eigenvalues)).to_blocks₁₁,
-      rw to_blocks₁₁,
-      dsimp,
-      rw diagonal_apply_eq,
-      cases lt_or_eq_of_le (eigenvalues_nonneg_of_pos_semidef _ 
-        (conj_transpose_mul_self_is_pos_semidef A) i),
-      exact h,
-      exfalso,
-      exact i.prop (h.symm), },
     rw mul_one_div_cancel,
-    apply real.sqrt_ne_zero'.2 diagnz, },
+    apply real.sqrt_ne_zero'.2 (diagnz i), },
+  
   have Sσ_is_unit_det: is_unit Sσ.det, 
-  -- sorry 
-  { change Sσ with diagonal (λ (i : {a // pn a}), real.sqrt (S₁₁ i i)),
-    change S₁₁ with Se.to_blocks₁₁,
-    change Se with (reindex e.symm e.symm) S,
-    rw [det_diagonal, to_blocks₁₁, is_unit_iff_ne_zero],
-    simp only [reindex_apply, equiv.symm_symm, submatrix_diagonal_equiv, of_apply, 
-      diagonal_apply_eq, function.comp_app, equiv.sum_compl_apply_inl,
-        finset.prod_ne_zero_iff, finset.mem_univ,  forall_true_left, real.sqrt_ne_zero'],
-    intro i,
-    apply lt_of_le_of_ne,
-    apply (eigenvalues_nonneg_of_pos_semidef _ 
-        (conj_transpose_mul_self_is_pos_semidef A) i),
-    exact i.prop.symm, },
-  have S₁₁diag : S₁₁ = diagonal (λ i:{a // pn a}, hAHA.eigenvalues i),
-  -- sorry 
-  { change S₁₁ with Se.to_blocks₁₁,
-    change Se with ((reindex e.symm e.symm) S),
-    rw to_blocks₁₁,
-    simp only [reindex_apply, equiv.symm_symm, submatrix_diagonal_equiv],
-    funext j k, 
-    rw of_apply,
-    by_cases hjk: j = k, rw hjk, 
-    rw [diagonal_apply_eq, diagonal_apply_eq, function.comp_app, equiv.sum_compl_apply_inl],
-    rw [diagonal_apply_ne, diagonal_apply_ne], 
-    exact hjk,
-    simp only [ne.def], exact hjk, },
+  sorry 
+  { change Sσ with diagonal (λ i: {a // pn a}, real.sqrt (hAHA.eigenvalues i)),
+    rw [det_diagonal, is_unit_iff_ne_zero],
+    simp only [finset.prod_ne_zero_iff, finset.mem_univ,  forall_true_left, real.sqrt_ne_zero'],
+    exact diagnz, },
+  -- have S₁₁diag : S₁₁ = diagonal (λ i:{a // pn a}, hAHA.eigenvalues i),
+  -- -- sorry 
+  -- { change S₁₁ with Se.to_blocks₁₁,
+  --   change Se with ((reindex e.symm e.symm) S),
+  --   rw to_blocks₁₁,
+  --   simp only [reindex_apply, equiv.symm_symm, submatrix_diagonal_equiv],
+  --   funext j k, 
+  --   rw of_apply,
+  --   by_cases hjk: j = k, rw hjk, 
+  --   rw [diagonal_apply_eq, diagonal_apply_eq, function.comp_app, equiv.sum_compl_apply_inl],
+  --   rw [diagonal_apply_ne, diagonal_apply_ne], 
+  --   exact hjk,
+  --   simp only [ne.def], exact hjk, },
 
   have threeSs : Sσᴴ⁻¹ ⬝ (S₁₁ ⬝ Sσ⁻¹) = 1, 
-  -- sorry 
-  { rw [← matrix.conj_transpose_nonsing_inv, Sσ_inv, S₁₁diag, diagonal_conj_transpose,
+  sorry 
+  { rw [← matrix.conj_transpose_nonsing_inv, Sσ_inv, hS₁₁, diagonal_conj_transpose,
       has_trivial_star.star_trivial, diagonal_mul_diagonal, diagonal_mul_diagonal, ← diagonal_one,
       diagonal_eq_diagonal_iff],
     intro i,
-    rw [diagonal_apply_eq, mul_comm, mul_assoc, div_mul_div_comm, one_mul, ← real.sqrt_mul,
+    rw [mul_comm, mul_assoc, div_mul_div_comm, one_mul, ← real.sqrt_mul,
       real.sqrt_mul_self, mul_div_cancel'], exact i.prop, 
       all_goals 
       { apply eigenvalues_nonneg_of_pos_semidef, 
         apply conj_transpose_mul_self_is_pos_semidef,}, },
 
   have Vinv : Vᴴ⬝V = 1, 
-  -- sorry 
+  sorry 
   { apply_fun matrix.mul V,
     rw ← matrix.mul_assoc,
     rw matrix.is_hermitian.conj_transpose_eigenvector_matrix ,
@@ -479,7 +484,7 @@ begin
     exact matrix.left_mul_inj_of_invertible _, },
   
   have Vbh : V₁ᴴ ⬝ V₁ = 1 ∧ V₁ᴴ ⬝ V₂ = 0 ∧ V₂ᴴ ⬝ V₁ = 0 ∧ V₂ᴴ ⬝ V₂ = 1, 
-  -- sorry 
+  sorry 
   { rw [Vblock, reindex_apply, conj_transpose_submatrix, submatrix_mul_equiv,
       from_blocks_conj_transpose, from_blocks_multiply] at Vinv,
     -- change xV₁ with vec_empty at Vinv,
@@ -492,24 +497,24 @@ begin
     rw [← from_blocks_one, from_blocks_inj] at Vinv, 
     exact Vinv},
 
-  have S₁₁diag : S₁₁ = diagonal (λ i:{a // pn a}, hAHA.eigenvalues i), 
+  -- have S₁₁diag : S₁₁ = diagonal (λ i:{a // pn a}, hAHA.eigenvalues i), 
   -- sorry 
-  { change S₁₁ with Se.to_blocks₁₁,
-    change Se with ((reindex e.symm e.symm) S),
-    rw to_blocks₁₁,
-    simp only [reindex_apply, equiv.symm_symm, submatrix_diagonal_equiv],
-    funext j k, 
-    rw of_apply,
-    by_cases hjk: j = k, rw hjk, 
-    rw [diagonal_apply_eq, diagonal_apply_eq, function.comp_app, equiv.sum_compl_apply_inl],
-    rw [diagonal_apply_ne, diagonal_apply_ne], 
-    exact hjk,
-    simp only [ne.def], exact hjk, },
+  -- { change S₁₁ with Se.to_blocks₁₁,
+  --   change Se with ((reindex e.symm e.symm) S),
+  --   rw to_blocks₁₁,
+  --   simp only [reindex_apply, equiv.symm_symm, submatrix_diagonal_equiv],
+  --   funext j k, 
+  --   rw of_apply,
+  --   by_cases hjk: j = k, rw hjk, 
+  --   rw [diagonal_apply_eq, diagonal_apply_eq, function.comp_app, equiv.sum_compl_apply_inl],
+  --   rw [diagonal_apply_ne, diagonal_apply_ne], 
+  --   exact hjk,
+  --   simp only [ne.def], exact hjk, },
   
   let U₁ := A⬝V₁⬝((Sσ⁻¹).map RηC),
   have V₁inv : V₁ᴴ⬝V₁ = 1, exact Vbh.1,
   have U₁inv : U₁ᴴ⬝U₁ = 1, 
-  -- sorry 
+  sorry 
   { change U₁ with A ⬝ V₁ ⬝ Sσ⁻¹.map RηC,
     rw [conj_transpose_mul, conj_transpose_mul, matrix.mul_assoc, matrix.mul_assoc, 
       matrix.mul_assoc A, ← matrix.mul_assoc Aᴴ],
@@ -521,7 +526,7 @@ begin
     exact  semiconj_RηC, },
   
   have U₁Sσ : U₁⬝((Sσ).map RηC) = A ⬝ V₁, 
-  -- sorry 
+  sorry 
   { change U₁ with A⬝V₁⬝((Sσ⁻¹).map RηC),
     rw [matrix.mul_assoc, ← matrix.map_mul, nonsing_inv_mul, matrix.map_one, matrix.mul_one],
     exact map_zero RηC, 
@@ -529,7 +534,7 @@ begin
     exact Sσ_is_unit_det, },
   
   have AV₂ : A⬝V₂ = 0, 
-  -- sorry 
+  sorry 
   { suffices h : Aᴴ⬝A⬝V₂ = 0,
     apply (ker_mat_mul_conj_transpose_mul_self _ _).1 h,
     rw [reducedSpectral, matrix.mul_assoc, (Vbh.2.1), matrix.mul_zero], },
@@ -542,13 +547,13 @@ begin
   let U₂ := ((reindex ebm.symm em.symm) U).to_blocks₁₂,
 
   -- have nzeigs_eqcard : fintype.card {a // pm a} = fintype.card {a // pn a}, 
-  -- { -- sorry, },
+  -- { sorry, },
 
   -- have ee : {a // pm a} ≃ {a // pn a}, 
   -- { exact (fintype.equiv_of_card_eq nzeigs_eqcard),},
 
   have AAHU₂ : A ⬝ Aᴴ ⬝ U₂ = 0, 
-  -- sorry 
+  sorry 
   { have spectralAAH := modified_spectral_theorem hAAH,
     rw spectralAAH,
     apply_fun matrix.mul hAAH.eigenvector_matrix_inv,
@@ -588,15 +593,15 @@ begin
     apply matrix.left_mul_inj_of_invertible, },
 
   have AHU₂ : Aᴴ⬝U₂ = 0, 
-  -- sorry 
+  sorry 
   { rw ← ker_mat_mul_self_conj_transpose, rw AAHU₂,},
   have U₁HU₂ : U₁ᴴ⬝U₂ = 0, 
-  -- sorry 
+  sorry 
   { change U₁ with A⬝V₁⬝((Sσ⁻¹).map RηC),
     rw [matrix.mul_assoc, conj_transpose_mul, matrix.mul_assoc, AHU₂, matrix.mul_zero], },
 
   have U₂HU₂: U₂ᴴ⬝U₂ = 1, 
-  -- sorry 
+  sorry 
   { change U₂ with ((reindex ebm.symm em.symm) U).to_blocks₁₂,
     change U with hAAH.eigenvector_matrix,
     
@@ -611,10 +616,10 @@ begin
     have : (x: fin m) ≠ y, { by_contra, rw subtype.coe_inj at h, exact hxy h, }, 
     rw [one_apply_ne this, one_apply_ne (hxy)], },
   have U₂HU₁: U₂ᴴ⬝U₁ = 0,
-  -- sorry
+  sorry
   { rw [← conj_transpose_conj_transpose U₁, ← conj_transpose_mul, U₁HU₂, conj_transpose_zero], },
   have : (from_blocks U₁ U₂ vec_empty vec_empty)ᴴ ⬝ (from_blocks U₁ U₂ vec_empty vec_empty) = 1, 
-  -- sorry
+  sorry
   { rw [from_blocks_conj_transpose, from_blocks_multiply],
     simp_rw [empty_mul_empty, add_zero, U₁inv, U₁HU₂, U₂HU₁, U₂HU₂, from_blocks_one], },
 
@@ -624,7 +629,7 @@ begin
        (reindex ebm (equiv.refl ({a // pn a} ⊕ {a // ¬pm a})))
              (from_blocks U₁ U₂ vec_empty vec_empty) ⬝
            (from_blocks Sσ 0 0 0).map RηC, 
-  -- sorry 
+  sorry 
   { simp_rw [reindex_apply],
     simp only [equiv.refl_symm, equiv.coe_refl, conj_transpose_submatrix],
     
@@ -650,7 +655,7 @@ begin
   have fFinal: 
     ((reindex eb (equiv.refl _)) (from_blocks V₁ V₂ vec_empty vec_empty)) ⬝
     ((reindex eb (equiv.refl _)) (from_blocks V₁ V₂ vec_empty vec_empty))ᴴ = 1, 
-  -- sorry 
+  sorry 
   { rw [conj_transpose_reindex, reindex_apply, reindex_apply, ← submatrix_mul,
     from_blocks_conj_transpose, from_blocks_multiply],
     simp only [mul_empty, of_add_of, pi.const_add, empty_add_empty],
@@ -693,18 +698,19 @@ begin
   have e_not_pn_r: {a // ¬pn a} ≃ (fin (n - r)), 
   { apply fintype.equiv_fin_of_card_eq card_not_pn_n_sub_r, },
 
-  have ezm : {a // pn a} ⊕ {a // ¬pm a} ≃ (fin r) ⊕ (fin (m - r)), 
+  let ezm : {a // pn a} ⊕ {a // ¬pm a} ≃ (fin r) ⊕ (fin (m - r)) 
+    := equiv_trans_across_sums e_pn_r e_not_pm_r,
   -- sorry 
-  { exact equiv_trans_across_sums e_pn_r e_not_pm_r,},
-  have ezn : {a // pn a} ⊕ {a // ¬pn a} ≃ (fin r) ⊕ (fin (n - r)), 
+  -- { exact equiv_trans_across_sums e_pn_r e_not_pm_r,},
+  let ezn : {a // pn a} ⊕ {a // ¬pn a} ≃ (fin r) ⊕ (fin (n - r)) 
   -- sorry 
-  {apply equiv_trans_across_sums e_pn_r e_not_pn_r,},
+    := equiv_trans_across_sums e_pn_r e_not_pn_r,
 
   have Final: A = 
     ((from_blocks U₁ U₂ vec_empty vec_empty).submatrix (ebm.symm) (ezm.symm)) ⬝
     ((((from_blocks Sσ 0 0 0)).submatrix (ezm.symm) (ezn.symm)).map RηC) ⬝
     ((from_blocks V₁ V₂ vec_empty vec_empty).submatrix (eb.symm) (ezn.symm))ᴴ,
-  -- sorry 
+  sorry 
   { apply_fun (λ x, x ⬝(((reindex eb (equiv.refl _)) (from_blocks V₁ V₂ vec_empty vec_empty))ᴴ)) at xFinal,
     rw matrix.mul_assoc at xFinal,
     rw fFinal at xFinal,
@@ -717,16 +723,18 @@ begin
     simp only [submatrix_submatrix, function.comp.right_id, function.comp.left_id] at xFinal,
     exact xFinal, },
   
-  -- have A_rank_r: A.rank = r, -- sorry,
+  -- have A_rank_r: A.rank = r, sorry,
   
   have e_pn_pm : {a // pm a} ≃ {a // pn a}, 
-  -- sorry 
+  sorry 
   { apply fintype.equiv_of_card_eq, rw [card_pn_r, card_pm_r], },
   
-  -- sorry 
+  sorry   
   { use (from_blocks U₁ U₂ vec_empty vec_empty).submatrix (ebm.symm) (ezm.symm),
+    -- use (λ i, (real.sqrt (S₁₁ (e_pn_r.symm i) (e_pn_r.symm i)))),
     use ((from_blocks Sσ 0 0 0)).submatrix (ezm.symm) (ezn.symm),
     use (from_blocks V₁ V₂ vec_empty vec_empty).submatrix (eb.symm) (ezn.symm),
+    -- intros Q,
     rw ← submatrix_map (RηC), 
     simp_rw conj_transpose_submatrix,
     split,
@@ -737,7 +745,16 @@ begin
       U₁inv, U₁HU₂, U₂HU₁, U₂HU₂, from_blocks_one, submatrix_one_equiv],
     rw subblocks_eq_one V₁ V₂ Vbh.1 Vbh.2.1 Vbh.2.2.1 Vbh.2.2.2,
     rw subblocks_eq_one_with_equiv U₁ U₂ e_pn_pm U₁inv U₁HU₂ U₂HU₁ U₂HU₂,
-    simp_rw [eq_self_iff_true, true_and],extract_goal, },
+    simp_rw [eq_self_iff_true, true_and],
+    simp_rw [to_blocks₁₂, to_blocks₂₁, to_blocks₂₂, ← matrix.ext_iff, submatrix_apply, 
+      of_apply, dmatrix.zero_apply, from_blocks, of_apply, pi.zero_apply, 
+      sum.elim_zero_zero],
+    change ezm with equiv_trans_across_sums e_pn_r e_not_pm_r,
+    change ezn with equiv_trans_across_sums e_pn_r e_not_pn_r,
+    simp_rw [equiv_trans_across_sums, equiv.coe_fn_symm_mk,
+      sum.elim_inl, sum.elim_inr, pi.zero_apply, eq_self_iff_true, 
+      forall_2_true_iff, and_true],
+     },
   
 end 
 
