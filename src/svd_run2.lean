@@ -309,7 +309,9 @@ lemma svd_decompose{m n r: ℕ} (A: matrix (fin m) (fin n) ℂ) (hrank: r = A.ra
     V⬝Vᴴ = 1 ∧
     U⬝Uᴴ = 1 ∧
     Uᴴ⬝U = 1 ∧ 
-    Vᴴ⬝V = 1 ∧ Q.to_blocks₁₂ = 0 ∧ Q.to_blocks₂₁ = 0 ∧  Q.to_blocks₂₂ = 0 := 
+    Vᴴ⬝V = 1 ∧ Q.to_blocks₁₂ = 0 ∧ Q.to_blocks₂₁ = 0 ∧  Q.to_blocks₂₂ = 0
+     ∧ (∀ i j, i ≠ j → Q.to_blocks₁₁ i j = 0) ∧ (∀ i, 0 < Q.to_blocks₁₁ i i) 
+      := 
 begin
   let hAHA := is_hermitian_transpose_mul_self A,
   let V := hAHA.eigenvector_matrix,
@@ -729,7 +731,7 @@ begin
   sorry 
   { apply fintype.equiv_of_card_eq, rw [card_pn_r, card_pm_r], },
   
-  sorry   
+  -- sorry   
   { use (from_blocks U₁ U₂ vec_empty vec_empty).submatrix (ebm.symm) (ezm.symm),
     -- use (λ i, (real.sqrt (S₁₁ (e_pn_r.symm i) (e_pn_r.symm i)))),
     use ((from_blocks Sσ 0 0 0)).submatrix (ezm.symm) (ezn.symm),
@@ -746,15 +748,22 @@ begin
     rw subblocks_eq_one V₁ V₂ Vbh.1 Vbh.2.1 Vbh.2.2.1 Vbh.2.2.2,
     rw subblocks_eq_one_with_equiv U₁ U₂ e_pn_pm U₁inv U₁HU₂ U₂HU₁ U₂HU₂,
     simp_rw [eq_self_iff_true, true_and],
-    simp_rw [to_blocks₁₂, to_blocks₂₁, to_blocks₂₂, ← matrix.ext_iff, submatrix_apply, 
+    simp_rw [to_blocks₁₁, to_blocks₁₂, to_blocks₂₁, to_blocks₂₂, ← matrix.ext_iff, submatrix_apply, 
       of_apply, dmatrix.zero_apply, from_blocks, of_apply, pi.zero_apply, 
       sum.elim_zero_zero],
     change ezm with equiv_trans_across_sums e_pn_r e_not_pm_r,
     change ezn with equiv_trans_across_sums e_pn_r e_not_pn_r,
     simp_rw [equiv_trans_across_sums, equiv.coe_fn_symm_mk,
       sum.elim_inl, sum.elim_inr, pi.zero_apply, eq_self_iff_true, 
-      forall_2_true_iff, and_true],
-     },
+      forall_2_true_iff, true_and],
+    change Sσ with diagonal (λ i: {a // pn a}, real.sqrt (hAHA.eigenvalues i)),
+    simp_rw [of_apply, diagonal_apply_eq, ne.def, real.sqrt_pos],
+    split,
+    intros i j hij,
+    apply diagonal_apply_ne,
+    rwa [ne.def, embedding_like.apply_eq_iff_eq ],
+    intros i,
+    apply diagnz, },
   
 end 
 
