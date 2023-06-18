@@ -297,14 +297,11 @@ begin
 end
 
 --/-!
-lemma svd_decompose{m n r: ℕ} (A: matrix (fin m) (fin n) ℂ) (hrank: r = A.rank): 
-∃ 
+lemma svd_decompose{m n r: ℕ} (A: matrix (fin m) (fin n) ℂ) : 
+r = A.rank → ∃
   (U: matrix (fin m) (fin r ⊕ fin (m - r)) ℂ)
-  -- (σVals : fin r → ℝ)
   (Q: matrix (fin r ⊕ fin (m - r)) (fin r ⊕ fin (n - r)) ℝ)
   (V: matrix (fin n) (fin r ⊕ fin (n - r)) ℂ), 
-  -- let Q: matrix (fin r ⊕ fin (m - r)) (fin r ⊕ fin (n - r)) ℝ 
-    -- := from_blocks (diagonal σVals) 0 0 0 in
     A = U⬝(Q.map RηC)⬝Vᴴ ∧ 
     V⬝Vᴴ = 1 ∧
     U⬝Uᴴ = 1 ∧
@@ -313,6 +310,7 @@ lemma svd_decompose{m n r: ℕ} (A: matrix (fin m) (fin n) ℂ) (hrank: r = A.ra
      ∧ (∀ i j, i ≠ j → Q.to_blocks₁₁ i j = 0) ∧ (∀ i, 0 < Q.to_blocks₁₁ i i) 
       := 
 begin
+  intros hrank,
   let hAHA := is_hermitian_transpose_mul_self A,
   let V := hAHA.eigenvector_matrix,
   let S := diagonal hAHA.eigenvalues,
