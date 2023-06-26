@@ -325,7 +325,8 @@ lemma reindex_symm_reindex {m n p q R: Type*}
   (A: matrix m n R)(e₁: m ≃ p)(e₂: n ≃ q):
   (reindex e₁ e₂).symm (reindex e₁ e₂ A) = A := 
 begin
-simp only [reindex_symm, reindex_apply, equiv.symm_symm, submatrix_submatrix, equiv.symm_comp_self, submatrix_id_id],
+simp only [reindex_symm, reindex_apply, equiv.symm_symm, submatrix_submatrix, 
+  equiv.symm_comp_self, submatrix_id_id],
 end
 
 lemma svdVblock (A: matrix (fin m) (fin n) ℂ):
@@ -352,10 +353,72 @@ begin
   apply svdVblock' A,
 end
 
--- lemma reducedSpectral_theorem (A: matrix (fin m) (fin n) ℂ):
---   Aᴴ⬝A = A.svdV₁ ⬝ (A.svdσ.map RηC) ⬝ A.svdV₁ᴴ := begin
---   rw  modified_spectral_theorem (is_hermitian_transpose_mul_self A),
--- end
+noncomputable def equiv_compl_zero_eigs (A: matrix (fin m) (fin n) ℂ):
+  {a // ¬(is_hermitian_transpose_mul_self A).eigenvalues a ≠ 0} ≃ (fin (n - A.rank)) :=
+begin
+  refine fintype.equiv_fin_of_card_eq _,
+  rw [fintype.card_subtype_compl, fintype.card_fin, 
+    rank_eq_card_pos_eigs_conj_transpose_mul_self],
+end
+
+noncomputable def equiv_non_zero_eigs (A: matrix (fin m) (fin n) ℂ):
+  {a // (is_hermitian_transpose_mul_self A).eigenvalues a ≠ 0} ≃ (fin (A.rank)) :=
+fintype.equiv_fin_of_card_eq (rank_eq_card_pos_eigs_conj_transpose_mul_self A).symm
+
+
+
+lemma svdVblock'' (A: matrix (fin m) (fin n) ℂ):
+  (is_hermitian_transpose_mul_self A).eigenvector_matrix = 
+  (reindex (equiv.refl _) (equiv.sum_compl (λ i, (is_hermitian_transpose_mul_self A).eigenvalues i ≠ 0))
+  (reindex (equiv.sum_empty (fin n) (fin 0)) 
+    (equiv_trans_across_sums 
+      (fintype.equiv_fin_of_card_eq (rank_eq_card_pos_eigs_conj_transpose_mul_self A).symm)
+      (equiv_compl_zero_eigs A)
+    ).symm
+  (from_blocks A.svdV₁ A.svdV₂ ![] ![]))) := 
+begin
+  apply svdVblock,
+end
+
+lemma reducedSpectral_theorem' (A: matrix (fin m) (fin n) ℂ):
+  Aᴴ⬝A = A.svdV₁ ⬝ (A.svdμ.map RηC) ⬝ A.svdV₁ᴴ := 
+begin
+  
+  let hAHA := is_hermitian_transpose_mul_self A,
+  let epn := equiv.sum_compl (λ i, hAHA.eigenvalues i ≠ 0),
+
+  simp_rw [svdV₁, svdμ, reindex_apply, equiv.refl_symm, equiv.symm_symm, equiv.coe_refl,
+    conj_transpose_submatrix],
+  rw ← submatrix_map,
+  rw ← submatrix_mul,
+  rw ← submatrix_mul,
+  rw submatrix_id_id,
+
+  nth_rewrite_lhs 0 ← submatrix_id_id (Aᴴ⬝A),
+  nth_rewrite_lhs 0  modified_spectral_theorem (is_hermitian_transpose_mul_self A),
+  rw ← is_hermitian.conj_transpose_eigenvector_matrix,
+  rw submatrix_mul _ _ _ epn _,
+  rw submatrix_mul _ _ _ epn _,
+  rw to_blocks₁₁,
+  funext i j,
+  simp_rw [mul_apply, finset.mul_sum, finset.sum_mul, submatrix_apply, id.def,
+   conj_transpose_apply, of_apply, equiv.sum_empty_apply_inl],
+  simp_rw fintype.sum_sum_type,
+  simp only [equiv.sum_compl_apply_inl, is_R_or_C.star_def, equiv.sum_compl_apply_inr, 
+    diagonal_map, map_eq_zero, diagonal_apply, ite_mul, mul_ite, zero_mul, mul_zero],
+  simp only [function.comp_app, finset.sum_ite_eq', finset.mem_univ, if_true],
+  have hz: ∀ (z: {a // ¬hAHA.eigenvalues a ≠ 0 }), hAHA.eigenvalues ↑z = 0, {
+    intro z, 
+    exact (not_ne_iff.1 z.prop),
+  },
+  simp_rw [hz],
+  simp only [complex.of_real_zero, zero_mul, mul_zero, if_t_t, finset.sum_const_zero, add_zero],
+  simp_rw [if_neg (compl_subtypes_ne _ _), finset.sum_const_zero, add_zero],
+  simp_rw [← subtype.ext_iff, finset.sum_ite_eq, finset.mem_univ, if_true],
+  simp_rw [RηC, complex.coe_algebra_map],
+  dsimp, congr, simp_rw mul_assoc,
+  all_goals {apply equiv.bijective},
+end
 
 noncomputable def svdU₁ (A: matrix (fin m) (fin n) ℂ): 
   matrix (fin m) (fin (A.rank)) ℂ :=  A ⬝ (A.svdV₁) ⬝ (A.svdσ.map RηC)
