@@ -249,7 +249,8 @@ begin
   exact reindex enx enx (diagonal (λ i: {a // hAHA.eigenvalues a ≠ 0}, hAHA.eigenvalues i)),
 end
 
-noncomputable def svdσ (A: matrix (fin m) (fin n) ℂ): matrix (fin A.rank) (fin A.rank) ℝ := 
+noncomputable def svdσ (A: matrix (fin m) (fin n) ℂ): 
+  matrix (fin A.rank) (fin A.rank) ℝ := 
 begin
   let hAHA := is_hermitian_transpose_mul_self A,
   let V := (hAHA).eigenvector_matrix,
@@ -257,7 +258,21 @@ begin
   let enx : {a // hAHA.eigenvalues a ≠ 0} ≃ (fin (A.rank)),
   { apply fintype.equiv_fin_of_card_eq, 
     rw [rank_eq_card_pos_eigs_conj_transpose_mul_self], },
-  exact reindex enx enx (diagonal (λ i: {a // hAHA.eigenvalues a ≠ 0},real.sqrt(hAHA.eigenvalues i) )),
+  exact reindex enx enx (diagonal (λ i: {a // hAHA.eigenvalues a ≠ 0},
+    real.sqrt(hAHA.eigenvalues i) )),
+end
+
+noncomputable def svdσ_inv (A: matrix (fin m) (fin n) ℂ): 
+  matrix (fin A.rank) (fin A.rank) ℝ := 
+begin
+  let hAHA := is_hermitian_transpose_mul_self A,
+  let V := (hAHA).eigenvector_matrix,
+  let epn := equiv.sum_compl (λ i, hAHA.eigenvalues i ≠ 0),
+  let enx : {a // hAHA.eigenvalues a ≠ 0} ≃ (fin (A.rank)),
+  { apply fintype.equiv_fin_of_card_eq, 
+    rw [rank_eq_card_pos_eigs_conj_transpose_mul_self], },
+  exact reindex enx enx (diagonal (λ i: {a // hAHA.eigenvalues a ≠ 0}, 
+    1 / real.sqrt(hAHA.eigenvalues i) )),
 end
 
 lemma modified_spectral_theorem 
@@ -421,11 +436,83 @@ begin
 end
 
 noncomputable def svdU₁ (A: matrix (fin m) (fin n) ℂ): 
-  matrix (fin m) (fin (A.rank)) ℂ :=  A ⬝ (A.svdV₁) ⬝ (A.svdσ.map RηC)
+  matrix (fin m) (fin (A.rank)) ℂ :=  A ⬝ (A.svdV₁) ⬝ ((A.svdσ⁻¹).map RηC)
 
+lemma mul_star_self_nonneg {n: Type*}[fintype n] 
+  (v: n → ℂ): 0 ≤ is_R_or_C.re((star v) ⬝ᵥ v) := 
+begin
+  simp_rw [is_R_or_C.re_to_complex, dot_product_comm, dot_product, 
+    complex.re_sum, pi.star_apply, ← star_ring_end_apply, 
+    complex.mul_conj, ← complex.sq_abs, complex.of_real_re],
+  apply finset.sum_nonneg,
+  intros i hi, simp only [pow_nonneg, map_nonneg],
+end
 
-lemma matrix.U₁_conj_transpose_U₁ (A: matrix (fin m) (fin n) ℂ): (A.svdU₁ᴴ ⬝ A.svdU₁) = 1 := begin
-  simp_rw [svdU₁, conj_transpose_mul],sorry,
+lemma conj_transpose_mul_self_is_pos_semidef {m n: Type*}
+  [fintype m][decidable_eq m][fintype n][decidable_eq n]
+  (A: matrix m n ℂ): matrix.pos_semidef (Aᴴ⬝A) 
+:= begin
+  split,
+  exact is_hermitian_transpose_mul_self A,
+  intro v,
+  rw [← mul_vec_mul_vec, dot_product_mul_vec, vec_mul_conj_transpose, 
+    is_R_or_C.re_to_complex, star_star], 
+  apply mul_star_self_nonneg,
+end
+
+lemma eigenvalues_nonneg_of_pos_semidef {n: Type*}[fintype n] [decidable_eq n]
+  (A: matrix n n ℂ) (hAp: matrix.pos_semidef A) (i: n): 
+  0 ≤ hAp.1.eigenvalues i := begin
+  rw  matrix.is_hermitian.eigenvalues_eq,
+  apply hAp.2,
+end
+
+lemma sing_vals_ne_zero_pos (A: matrix (fin m) (fin n) ℂ) 
+  (z: {a // (is_hermitian_transpose_mul_self A).eigenvalues a ≠ 0 }): 
+  -- ∀ (z: {a // (is_hermitian_transpose_mul_self A).eigenvalues a ≠ 0 }), 
+    0 < real.sqrt((is_hermitian_transpose_mul_self A).eigenvalues ↑z) :=
+begin
+  -- refine ne_of_gt _,
+  rw real.sqrt_pos,
+  apply lt_of_le_of_ne,
+  apply eigenvalues_nonneg_of_pos_semidef,
+  exact (conj_transpose_mul_self_is_pos_semidef A),
+  exact z.prop.symm,
+end
+
+lemma svdσ_inv_eq (A: matrix (fin m) (fin n) ℂ): (A.svdσ)⁻¹ = A.svdσ_inv := begin
+  apply inv_eq_right_inv,
+  simp_rw [svdσ, svdσ_inv, reindex_apply, submatrix_mul_equiv, diagonal_mul_diagonal,
+    submatrix_diagonal_equiv, mul_one_div_cancel (ne_of_gt (sing_vals_ne_zero_pos A _))],
+  exact diagonal_one,
+end
+
+lemma threeSσ (A: matrix (fin m) (fin n) ℂ): (A.svdσ)⁻¹ᴴ ⬝ (A.svdμ ⬝ (A.svdσ)⁻¹) = 1 := begin
+  have xsms: ∀ (x: ℝ), (0 < real.sqrt(x)) → 
+    (1 / real.sqrt(x))*(x * (1 / real.sqrt(x))) = 1, 
+  { intros x h, rw real.sqrt_pos at h,
+    rw [mul_one_div, div_mul_div_comm, one_mul, real.mul_self_sqrt (le_of_lt h),
+      div_self (ne_of_gt h)], },
+  rw [svdμ, svdσ_inv_eq A, svdσ_inv],
+  simp_rw [reindex_apply, conj_transpose_submatrix, diagonal_conj_transpose, 
+    star_trivial, submatrix_mul_equiv, diagonal_mul_diagonal, submatrix_diagonal_equiv, 
+    ← diagonal_one, xsms _ (sing_vals_ne_zero_pos A _)],
+end
+
+lemma semiconj_RηC : function.semiconj ⇑RηC star star :=
+begin
+  intro x,
+  simp_rw [RηC, is_R_or_C.star_def, is_R_or_C.conj_to_real, complex.coe_algebra_map, is_R_or_C.conj_of_real],
+end
+
+lemma matrix.U₁_conj_transpose_U₁ (A: matrix (fin m) (fin n) ℂ): (A.svdU₁ᴴ ⬝ A.svdU₁) = 1 := 
+begin
+rw [svdU₁, conj_transpose_mul, conj_transpose_mul, matrix.mul_assoc, matrix.mul_assoc, 
+  matrix.mul_assoc, ← matrix.mul_assoc Aᴴ, reducedSpectral_theorem', matrix.mul_assoc, 
+  ← matrix.mul_assoc _ A.svdV₁, V₁_conj_transpose_mul_V₁, matrix.one_mul], 
+rw [matrix.mul_assoc A.svdV₁, ← matrix.mul_assoc _ A.svdV₁, V₁_conj_transpose_mul_V₁, 
+  matrix.one_mul, ← (conj_transpose_map RηC semiconj_RηC), ← matrix.map_mul, 
+  ← matrix.map_mul, threeSσ, matrix.map_one RηC complex.of_real_zero complex.of_real_one],
 end
 
 end matrix
