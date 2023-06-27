@@ -505,14 +505,155 @@ begin
   simp_rw [RηC, is_R_or_C.star_def, is_R_or_C.conj_to_real, complex.coe_algebra_map, is_R_or_C.conj_of_real],
 end
 
-lemma matrix.U₁_conj_transpose_U₁ (A: matrix (fin m) (fin n) ℂ): (A.svdU₁ᴴ ⬝ A.svdU₁) = 1 := 
-begin
+lemma U₁_conj_transpose_U₁ (A: matrix (fin m) (fin n) ℂ): (A.svdU₁ᴴ ⬝ A.svdU₁) = 1 
+:= begin
 rw [svdU₁, conj_transpose_mul, conj_transpose_mul, matrix.mul_assoc, matrix.mul_assoc, 
   matrix.mul_assoc, ← matrix.mul_assoc Aᴴ, reducedSpectral_theorem', matrix.mul_assoc, 
   ← matrix.mul_assoc _ A.svdV₁, V₁_conj_transpose_mul_V₁, matrix.one_mul], 
 rw [matrix.mul_assoc A.svdV₁, ← matrix.mul_assoc _ A.svdV₁, V₁_conj_transpose_mul_V₁, 
   matrix.one_mul, ← (conj_transpose_map RηC semiconj_RηC), ← matrix.map_mul, 
   ← matrix.map_mul, threeSσ, matrix.map_one RηC complex.of_real_zero complex.of_real_one],
+end
+
+
+lemma ker_mat_mul_conj_transpose_mul_self
+  {m n p: Type*}
+  [fintype m][decidable_eq m][fintype n][decidable_eq n]
+  [fintype p][decidable_eq p]
+  (A: matrix m n ℂ)(B: matrix n p ℂ) :
+  (Aᴴ⬝A)⬝B = 0 ↔ A⬝B = 0 := begin
+  split,
+  intro h,
+  funext x y, rw [dmatrix.zero_apply],
+  replace h := congr_arg (matrix.mul (Bᴴ)) h,
+  rw [matrix.mul_assoc, ← matrix.mul_assoc, ← conj_transpose_mul, matrix.mul_zero, 
+    ← matrix.ext_iff] at h,
+  replace h := h y y, simp_rw pi.zero_apply at h,
+  rw mul_apply at h, simp_rw conj_transpose_apply at h,
+  simp_rw [← star_ring_end_apply, mul_comm,
+    complex.mul_conj, ← complex.sq_abs, complex.ext_iff, complex.im_sum, complex.of_real_im, 
+    complex.re_sum, complex.of_real_re, complex.zero_re, complex.zero_im, 
+    finset.sum_const_zero, eq_self_iff_true, and_true] at h,
+  rw finset.sum_eq_zero_iff_of_nonneg at h,
+  simp_rw [finset.mem_univ, forall_true_left, pow_eq_zero_iff zero_lt_two, 
+    absolute_value.eq_zero] at h,
+  exact h x,
+  intro i, simp only [finset.mem_univ, pow_nonneg, map_nonneg, forall_true_left],
+  intro h, 
+  rw [matrix.mul_assoc, h, matrix.mul_zero],
+end
+
+lemma AV₂_eq_zero (A: matrix (fin m) (fin n) ℂ): A ⬝ A.svdV₂ = 0 := begin
+  suffices h : Aᴴ⬝A⬝(A.svdV₂) = 0,
+  apply (ker_mat_mul_conj_transpose_mul_self _ _).1 h,
+  rw [reducedSpectral_theorem', matrix.mul_assoc, V₁_conj_transpose_mul_V₂,
+    matrix.mul_zero],
+end
+
+noncomputable def svdU₂ (A: matrix (fin m) (fin n) ℂ): matrix (fin m) (fin (m - A.rank)) ℂ := begin
+  let hAAH := is_hermitian_mul_conj_transpose_self A,
+  let U := (hAAH).eigenvector_matrix,
+  let epm := equiv.sum_compl (λ i, hAAH.eigenvalues i ≠ 0),
+  let ebm := equiv.sum_empty (fin m) (fin 0),
+  let emx : {a // ¬hAAH.eigenvalues a ≠ 0} ≃ (fin (m - A.rank)) := by 
+  { refine fintype.equiv_fin_of_card_eq _,
+    rw [fintype.card_subtype_compl, fintype.card_fin,
+    rank_eq_card_pos_eigs_self_mul_conj_transpose], },
+  exact ((reindex (equiv.refl _) emx) ((reindex ebm.symm epm.symm U).to_blocks₁₂)),
+end
+
+lemma ker_mat_mul_self_conj_transpose 
+  {m n p: Type*}
+  [fintype m][decidable_eq m][fintype n][decidable_eq n]
+  [fintype p][decidable_eq p]  
+(A: matrix n m ℂ)(B: matrix n p ℂ) :
+  (A⬝Aᴴ)⬝B = 0 ↔ Aᴴ⬝B = 0 := begin
+  split,
+  swap,
+  intro h, rw [matrix.mul_assoc, h, matrix.mul_zero],
+  intro h,
+  rw ← conj_transpose_conj_transpose A at h,
+  nth_rewrite 1 conj_transpose_conj_transpose at h,
+  exact (ker_mat_mul_conj_transpose_mul_self (Aᴴ) B).1 h,
+end
+
+lemma AHU₂_eq_zero (A: matrix (fin m) (fin n) ℂ): Aᴴ ⬝ A.svdU₂ = 0 := begin
+  suffices h : A⬝Aᴴ⬝(A.svdU₂) = 0,
+  apply (ker_mat_mul_self_conj_transpose  _ _).1 h,
+
+  let hAAH := (is_hermitian_mul_conj_transpose_self A),
+  let epm := equiv.sum_compl (λ i, hAAH.eigenvalues i ≠ 0),
+  let emx : {a // ¬hAAH.eigenvalues a ≠ 0} ≃ (fin (m - A.rank)),
+  { refine fintype.equiv_fin_of_card_eq _,
+    rw [fintype.card_subtype_compl, fintype.card_fin,
+    rank_eq_card_pos_eigs_self_mul_conj_transpose], },
+
+  have spectralAAH := modified_spectral_theorem (is_hermitian_mul_conj_transpose_self A),
+  rw spectralAAH,
+
+  apply_fun matrix.mul hAAH.eigenvector_matrix_inv,
+  rw [← matrix.mul_assoc, ← matrix.mul_assoc, eigenvector_matrix_inv_mul_self hAAH,
+    matrix.one_mul, matrix.mul_zero, svdU₂],
+  
+  apply_fun (reindex (equiv.refl _) emx.symm),
+  simp only [reindex_apply, equiv.symm_symm, equiv.refl_symm, 
+    equiv.coe_refl, submatrix_zero, dmatrix.zero_apply],
+  rw [← submatrix_mul_equiv _ _ _ (equiv.refl _) _, submatrix_submatrix,
+    equiv.coe_refl, function.comp.right_id, equiv.symm_comp_self, submatrix_id_id,
+    submatrix_id_id],
+  
+  simp only [to_blocks₁₂, submatrix_apply, equiv.sum_empty_apply_inl, 
+    equiv.sum_compl_apply_inr],
+
+  simp_rw [matrix.mul, dot_product, of_apply, finset.sum_mul, diagonal_apply, ite_mul,
+    zero_mul, finset.sum_ite_eq, finset.mem_univ, if_true, 
+    conj_transpose_apply, is_R_or_C.star_def, function.comp_app,
+    mul_assoc, ← finset.mul_sum, ← mul_apply],
+
+  funext i j,
+  rw eigenvector_matrix_inv_mul_self,
+  simp only [dmatrix.zero_apply, mul_eq_zero, complex.of_real_eq_zero],
+  by_cases i = j, 
+  left, rw h, 
+  exact not_not.mp j.prop,
+  right, rw one_apply_ne h,
+  exact matrix.left_mul_inj_of_invertible _,
+end
+
+lemma U₁_conj_transpose_mul_U₂(A: matrix (fin m) (fin n) ℂ): (A.svdU₁ᴴ ⬝ A.svdU₂) = 0 
+:= begin
+  rw [svdU₁, conj_transpose_mul,  conj_transpose_mul, matrix.mul_assoc, matrix.mul_assoc, 
+    AHU₂_eq_zero, matrix.mul_zero, matrix.mul_zero],
+end
+
+lemma U₂_conj_transpose_mul_U₂(A: matrix (fin m) (fin n) ℂ): (A.svdU₂ᴴ ⬝ A.svdU₂) = 1 
+:= begin
+  rw svdU₂,
+  simp only [reindex_apply, equiv.symm_symm, equiv.refl_symm, equiv.coe_refl, 
+    conj_transpose_submatrix],
+  rw ← submatrix_mul, 
+  rw to_blocks₁₂,
+  simp only [submatrix_apply, equiv.sum_empty_apply_inl, equiv.sum_compl_apply_inr],
+  -- funext x y,
+  rw ← reindex_apply, 
+  
+  let hAAH := (is_hermitian_mul_conj_transpose_self A),
+  let emx : {a // ¬hAAH.eigenvalues a ≠ 0} ≃ (fin (m - A.rank)),
+  { refine fintype.equiv_fin_of_card_eq _,
+    rw [fintype.card_subtype_compl, fintype.card_fin,
+    rank_eq_card_pos_eigs_self_mul_conj_transpose], },
+
+  apply_fun (reindex emx emx).symm,
+  rw [reindex_symm_reindex, reindex_symm, reindex_apply, submatrix_one_equiv],
+  simp_rw [matrix.mul, dot_product, conj_transpose_apply, of_apply, 
+    ← conj_transpose_apply, ← mul_apply, is_hermitian.conj_transpose_eigenvector_matrix,
+    eigenvector_matrix_inv_mul_self],
+  funext i j,
+  by_cases i = j, rw [h, one_apply_eq, one_apply_eq],
+  rw [one_apply_ne, one_apply_ne h],
+  rw [ne.def, subtype.coe_inj],
+  exact h,
+  exact function.bijective_id,
 end
 
 end matrix
