@@ -12,10 +12,6 @@ open_locale matrix big_operators
 
 namespace matrix
 
-variables {m n r: ℕ}
-variables {A: matrix (fin m) (fin n) ℂ}
-variables {hr: r = A.rank}
-
 def RηC := algebra_map ℝ ℂ
 
 def equiv_trans_across_sums
@@ -32,13 +28,94 @@ def equiv_trans_across_sums
       simp only [sum.elim_inl, equiv.apply_symm_apply],
       simp only [sum.elim_inr, equiv.apply_symm_apply], }, }
 
+lemma rank_mul_unit {m n: Type*}[fintype m][decidable_eq m][fintype n][decidable_eq n]
+  {R: Type*}[comm_ring R] (A: matrix n n R){B: matrix m n R} (hA: is_unit A.det):
+  (B⬝A).rank = B.rank := begin
+  rw [matrix.rank, mul_vec_lin_mul, linear_map.range_comp_of_range_eq_top, ← matrix.rank],
+  rw linear_map.range_eq_top,
+  intro x,
+  use ((A⁻¹).mul_vec_lin ) x,
+  rwa [mul_vec_lin_apply, mul_vec_lin_apply, mul_vec_mul_vec, mul_nonsing_inv, one_mul_vec],
+end
+
+lemma rank_mul_unit'{m n: Type*}[fintype m][decidable_eq m][fintype n][decidable_eq n]
+  {R: Type*}[field R] (A: matrix m m R){B: matrix m n R} (hA: is_unit A.det):
+  (A⬝B).rank = B.rank := begin
+  have h: linear_map.ker ((A⬝B).mul_vec_lin) = linear_map.ker (B.mul_vec_lin) ,
+  { rw [mul_vec_lin_mul, linear_map.ker_comp_of_ker_eq_bot],
+    rw linear_map.ker_eq_bot,
+    simp_rw [function.injective, mul_vec_lin_apply],
+    intros x y h,
+    replace h := congr_arg (λ x, matrix.mul_vec (A⁻¹) x)  h, 
+    simp_rw [mul_vec_mul_vec, nonsing_inv_mul A hA, one_mul_vec] at h, 
+    exact h, },  
+  have hB := linear_map.finrank_range_add_finrank_ker ((B).mul_vec_lin),
+  rw [← linear_map.finrank_range_add_finrank_ker ((A⬝B).mul_vec_lin), h, add_left_inj] at hB,
+  rw [matrix.rank, matrix.rank, hB],
+end
+
+lemma modified_spectral_theorem 
+  {n: Type*}[fintype n][decidable_eq n]
+  {A: matrix n n ℂ}(hA: A.is_hermitian) :
+  A = (hA.eigenvector_matrix) ⬝ 
+    (matrix.diagonal (coe ∘ hA.eigenvalues)).mul hA.eigenvector_matrix_inv := 
+begin
+  have h := hA.spectral_theorem,
+  replace h := congr_arg (λ x, hA.eigenvector_matrix ⬝  x) h,
+  simp only at h,
+  rwa [← matrix.mul_assoc, hA.eigenvector_matrix_mul_inv, matrix.one_mul] at h,
+end
+
+lemma rank_eq_rank_diagonal {n: Type*}[fintype n][decidable_eq n] 
+  (A: matrix n n ℂ)(hA: A.is_hermitian) :
+  A.rank = (matrix.diagonal (coe ∘ hA.eigenvalues: n → ℂ )).rank := 
+begin
+  nth_rewrite_lhs 0 modified_spectral_theorem hA,
+
+  have hE := is_unit_det_of_invertible (hA.eigenvector_matrix),
+  have hiE := is_unit_det_of_invertible (hA.eigenvector_matrix_inv),
+  
+  rw rank_mul_unit' (hA.eigenvector_matrix) hE,
+  rw rank_mul_unit (hA.eigenvector_matrix_inv) hiE,
+  assumption',
+end
+
+lemma rank_diagonal_matrix
+  {n: Type*}[fintype n][decidable_eq n] 
+  {Z: Type*}[field Z][decidable_eq Z] (w: n → Z) :
+  ((matrix.diagonal w).rank) = ↑(fintype.card {i // (w i) ≠ 0}) :=
+begin
+  have hu : set.univ ⊆ {i : n | w i = 0}ᶜ ∪ {i : n | w i = 0}, { rw set.compl_union_self },
+  have hd : disjoint {i : n | w i ≠ 0} {i : n | w i = 0} := disjoint_compl_left,
+  have B₁ := linear_map.supr_range_std_basis_eq_infi_ker_proj Z (λi:n, Z) hd hu (set.to_finite _),
+  have B₂ := @linear_map.infi_ker_proj_equiv Z _ _ (λi:n, Z) _ _ _ _ (by simp; apply_instance) hd hu,
+  rw matrix.rank,
+  rw ← to_lin'_apply',
+  rw range_diagonal,
+  rw B₁,
+  rw ← finite_dimensional.finrank_fintype_fun_eq_card Z,
+  apply linear_equiv.finrank_eq,
+  apply B₂,
+end
+
+instance iC := complex.star_ordered_ring
+
+lemma rank_eq_count_non_zero_eigs {n: Type*}[fintype n][decidable_eq n] 
+  (A: matrix n n ℂ)(hA: A.is_hermitian) :
+  A.rank =  ↑(fintype.card {i // hA.eigenvalues i ≠ 0}) := 
+begin
+  rw [rank_eq_rank_diagonal A hA, rank_diagonal_matrix],
+  simp_rw [fintype.card_subtype_compl, complex.of_real_eq_zero],
+end
+
 lemma rank_eq_card_pos_eigs_conj_transpose_mul_self 
   {y: Type*}[fintype y][decidable_eq y] 
   {z: Type*}[fintype z][decidable_eq z] 
   (A: matrix y z ℂ):
   A.rank =  (fintype.card {i // (is_hermitian_transpose_mul_self A).eigenvalues i ≠ 0}) :=
 begin
-  sorry,
+  rw ← rank_conj_transpose_mul_self,
+  apply rank_eq_count_non_zero_eigs,
 end
 
 lemma rank_eq_card_pos_eigs_self_mul_conj_transpose
@@ -47,8 +124,13 @@ lemma rank_eq_card_pos_eigs_self_mul_conj_transpose
   (A: matrix y z ℂ):
   A.rank =  (fintype.card {i // (is_hermitian_mul_conj_transpose_self A).eigenvalues i ≠ 0}) :=
 begin
-  sorry,
+  rw ← rank_self_mul_conj_transpose,
+  apply rank_eq_count_non_zero_eigs,
 end
+
+variables {m n r: ℕ}
+variables {A: matrix (fin m) (fin n) ℂ}
+variables {hr: r = A.rank}
 
 noncomputable def svdV₁ (A: matrix (fin m) (fin n) ℂ): matrix (fin n) (fin A.rank) ℂ := begin
   let hAHA := is_hermitian_transpose_mul_self A,
@@ -227,18 +309,6 @@ begin
     rw [rank_eq_card_pos_eigs_conj_transpose_mul_self], },
   exact reindex enx enx (diagonal (λ i: {a // hAHA.eigenvalues a ≠ 0}, 
     1 / real.sqrt(hAHA.eigenvalues i) )),
-end
-
-lemma modified_spectral_theorem 
-  {n: Type*}[fintype n][decidable_eq n]
-  {A: matrix n n ℂ}(hA: A.is_hermitian) :
-  A = (hA.eigenvector_matrix) ⬝ 
-    (matrix.diagonal (coe ∘ hA.eigenvalues)).mul hA.eigenvector_matrix_inv := 
-begin
-  have h := hA.spectral_theorem,
-  replace h := congr_arg (λ x, hA.eigenvector_matrix ⬝  x) h,
-  simp only at h,
-  rwa [← matrix.mul_assoc, hA.eigenvector_matrix_mul_inv, matrix.one_mul] at h,
 end
 
 lemma reindex_inj {m n p q R: Type*}
@@ -433,13 +503,14 @@ begin
   exact (conj_transpose_mul_self_is_pos_semidef A),
   exact z.prop.symm,
 end
-
-lemma svdσ_inv_eq (A: matrix (fin m) (fin n) ℂ): (A.svdσ)⁻¹ = A.svdσ_inv := begin
-  apply inv_eq_right_inv,
+lemma svdσ_inv_mul_svdσ (A: matrix (fin m) (fin n) ℂ): A.svdσ ⬝ A.svdσ_inv = 1 :=
+begin
   simp_rw [svdσ, svdσ_inv, reindex_apply, submatrix_mul_equiv, diagonal_mul_diagonal,
     submatrix_diagonal_equiv, mul_one_div_cancel (ne_of_gt (sing_vals_ne_zero_pos A _))],
   exact diagonal_one,
 end
+lemma svdσ_inv_eq (A: matrix (fin m) (fin n) ℂ): (A.svdσ)⁻¹ = A.svdσ_inv := 
+inv_eq_right_inv (svdσ_inv_mul_svdσ A)
 
 lemma threeSσ (A: matrix (fin m) (fin n) ℂ): (A.svdσ)⁻¹ᴴ ⬝ (A.svdμ ⬝ (A.svdσ)⁻¹) = 1 := begin
   have xsms: ∀ (x: ℝ), (0 < real.sqrt(x)) → 
@@ -619,7 +690,63 @@ lemma U_inv (A: matrix (fin m) (fin n) ℂ):
   rw [U₁_conj_transpose_U₁, U₁_conj_transpose_mul_U₂, U₂_conj_transpose_mul_U₁, 
     U₂_conj_transpose_mul_U₂, from_blocks_one],
 end
--- lemma svd_theorem (A: matrix (fin m) (fin n) ℂ): 
---     A.svdU₂
+
+lemma submatrix_empty_blocks {m n R: Type*}[comm_ring R]
+  [fintype m][fintype n]
+  [decidable_eq m][decidable_eq n]
+  (A: matrix m n R) {C: matrix (fin 0) n R} {B: matrix m (fin 0) R}{D: matrix (fin 0) (fin 0) R}:
+  (from_blocks (A) B C D)
+   .submatrix (equiv.sum_empty m (fin 0)).symm (equiv.sum_empty n (fin 0)).symm = A
+:= begin
+  funext x y, 
+  simp_rw [submatrix_apply, from_blocks, of_apply, equiv.sum_empty_symm_apply, sum.elim_inl],
+end
+
+lemma xar {α β : Type*} [fintype α] [comm_ring β]
+  {p : α → Prop} {f : α → β} [decidable_pred p] :
+  (∑ (i : {x // p x}), f i) + (∑ i : {x // ¬ p x}, f i) = ∑ i, f i :=
+begin
+  classical,
+  let s := {x | p x}.to_finset,
+  rw [← finset.sum_subtype s, ← finset.sum_subtype sᶜ],
+  { exact finset.sum_add_sum_compl _ _ },
+  { simp },
+  { simp }
+end
+
+
+lemma V₁V₁H_add_V₂V₂H (A: matrix (fin m) (fin n) ℂ):
+  A.svdV₁⬝A.svdV₁ᴴ + A.svdV₂⬝A.svdV₂ᴴ = 1 := 
+begin
+  let hAHA := svdV₁._proof_1 A,
+  simp_rw [svdV₁, svdV₂, to_blocks₁₁, to_blocks₁₂],
+  simp_rw [reindex_apply, equiv.symm_symm, submatrix_apply, equiv.sum_empty_apply_inl, 
+    equiv.sum_compl_apply_inl, equiv.refl_symm, equiv.coe_refl, conj_transpose_submatrix, 
+    submatrix_mul_equiv, submatrix_id_id, equiv.sum_compl_apply_inr],
+  simp_rw [matrix.mul, dot_product, conj_transpose_apply, of_apply, 
+    ← conj_transpose_apply, is_hermitian.conj_transpose_eigenvector_matrix],
+  funext  j k,
+  simp_rw pi.add_apply,
+  erw fintype.sum_subtype_add_sum_subtype _
+    (λ x, is_hermitian.eigenvector_matrix hAHA j x * is_hermitian.eigenvector_matrix_inv hAHA x k),
+  rw [← mul_apply, is_hermitian.eigenvector_matrix_mul_inv], 
+end
+
+lemma svd_theorem (A: matrix (fin m) (fin n) ℂ): 
+  A = 
+    reindex (equiv.sum_empty (fin m) (fin 0)) (equiv.sum_empty (fin n) (fin 0))
+    ((from_blocks A.svdU₁ A.svdU₂ ![] ![]) ⬝ 
+    (from_blocks (A.svdσ.map RηC) 0 0 (0: matrix (fin (m - A.rank)) (fin (n - A.rank)) ℂ)) ⬝
+    (from_blocks A.svdV₁ A.svdV₂ ![] ![])ᴴ) := 
+begin
+  simp_rw [from_blocks_conj_transpose, from_blocks_multiply, reindex_apply,
+    submatrix_empty_blocks, matrix.mul_zero, add_zero],
+   
+  rw [svdU₁, matrix.mul_assoc _ (A.svdσ⁻¹.map RηC), ← matrix.map_mul, nonsing_inv_mul,
+    matrix.map_one RηC (map_zero RηC) (complex.of_real_one), matrix.mul_one, 
+    ← AV₂_eq_zero, matrix.mul_assoc, matrix.mul_assoc, ← matrix.mul_add, V₁V₁H_add_V₂V₂H, 
+    matrix.mul_one], 
+  exact is_unit_det_of_right_inverse (svdσ_inv_mul_svdσ A),
+end
 
 end matrix
