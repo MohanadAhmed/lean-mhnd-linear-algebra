@@ -104,14 +104,11 @@ lemma one_subtype
   (λ i j: subtype p, (1: matrix m m R) i j) = (1: matrix (subtype p) (subtype p) R) :=
 begin
   funext x y,
-  -- rw of_apply,
   by_cases hxy: x = y,
-  rw hxy, rw [one_apply_eq, one_apply_eq],
+  rw [hxy, one_apply_eq, one_apply_eq],
   rw [one_apply_ne hxy, one_apply_ne],
-  by_contra h,
-  rw subtype.coe_eq_iff at h,
-  simp only [ne.def, subtype.coe_eta, embedding_like.apply_eq_iff_eq, exists_prop] at h,
-  exact hxy h.2,
+  rw [ne.def, subtype.coe_inj],
+  exact hxy,
 end
 
 lemma submatrix_equiv_one_subtype
